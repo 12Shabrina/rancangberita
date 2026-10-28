@@ -1,0 +1,2793 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancang Berita - Platform Pembelajaran Menulis Berita SMA</title>
+
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel CDN for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                500: '#3b82f6',
+                700: '#1d4ed8',
+                800: '#1e40af',
+                900: '#1e3a8a',
+              },
+              accent: {
+                400: '#fbbf24',
+                500: '#f59e0b',
+                600: '#d97706',
+              }
+            },
+            fontFamily: {
+              sans: ['Calibri', 'Segoe UI', 'sans-serif'],
+              newspaper: ['Times New Roman', 'Georgia', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        font-family: 'Calibri', 'Segoe UI', sans-serif;
+        background-color: #f8fafc;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .newspaper-box {
+        background-color: #fffdf9;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+      }
+    </style>
+</head>
+<body class="bg-blue-50/50 text-slate-800 min-h-screen">
+
+    <div id="root"></div>
+
+    <!-- Firebase App & Firestore Scripts -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      // Fallback Firebase Config for fallback/local development
+      const firebaseConfig = typeof __firebase_config !== 'undefined' 
+        ? JSON.parse(__firebase_config) 
+        : {
+            apiKey: "demo-api-key",
+            authDomain: "rancang-berita-demo.firebaseapp.com",
+            projectId: "rancang-berita-demo",
+            storageBucket: "rancang-berita-demo.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:demo"
+          };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      window.db = db;
+      window.auth = auth;
+      window.appId = typeof __app_id !== 'undefined' ? __app_id : 'rancang-berita-app';
+
+      // Auto login anonymous for sync
+      signInAnonymously(auth).catch((err) => console.log("Anon auth notice:", err));
+    </script>
+
+    <!-- React App Implementation -->
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      // Class options XI-1 to XI-12
+      const CLASS_OPTIONS = Array.from({ length: 12 }, (_, i) => `XI-${i + 1}`);
+
+      // Main App Component
+      function App() {
+        // App State & Routing
+        const [serverAuthenticated, setServerAuthenticated] = useState(false);
+        const [user, setUser] = useState(null); // { name, class, absentNo, role: 'student'|'teacher', avatar: 'male'|'female' }
+        const [currentView, setCurrentView] = useState('server_access'); // views: server_access, auth, avatar_select, student_dashboard, form_bahan, misi1_materi, misi1_work, misi2_materi, misi2_work, misi3_materi, misi3_work, misi4_materi, misi4_work, preview_publish, gallery, teacher_dashboard, teacher_detail
+
+        // Current Student Drafting News Data
+        const [newsDraft, setNewsDraft] = useState({
+          id: '',
+          title: '',
+          event: '',
+          category: 'Sekolah',
+          location: '',
+          datetime: '',
+          parties: '',
+          sourceName: '',
+          sourceQuote: '',
+          facts: '',
+          chronology: '',
+          background: '',
+          evidence: '',
+          
+          // Mission 1: Facts List (min 5)
+          factsList: [
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' }
+          ],
+
+          // Mission 2: 5W+1H
+          fiveW1H: {
+            what: { text: '', status: 'isi' },
+            who: { text: '', status: 'isi' },
+            where: { text: '', status: 'isi' },
+            when: { text: '', status: 'isi' },
+            why: { text: '', status: 'isi' },
+            how: { text: '', status: 'isi' }
+          },
+
+          // Mission 3: Structure
+          structure: {
+            lead: '',
+            body: '',
+            ending: ''
+          },
+
+          // Mission 4: Editing
+          editedNews: {
+            lead: '',
+            body: '',
+            ending: ''
+          },
+
+          // Progress tracker
+          missionProgress: {
+            bahan: false,
+            misi1: false,
+            misi2: false,
+            misi3: false,
+            misi4: false,
+            published: false
+          }
+        });
+
+        // Global Storage of Published News & Student Submissions
+        const [allPublishedNews, setAllPublishedNews] = useState([]);
+        const [selectedNewsForDetail, setSelectedNewsForDetail] = useState(null);
+        
+        // Notifications & Modals
+        const [toastMessage, setToastMessage] = useState(null);
+        const [selectedFont, setSelectedFont] = useState('serif');
+
+        // Check local saved session
+        useEffect(() => {
+          const savedServer = localStorage.getItem('rb_server_auth');
+          if (savedServer === 'true') {
+            setServerAuthenticated(true);
+            const savedUser = localStorage.getItem('rb_user');
+            if (savedUser) {
+              const parsedUser = JSON.parse(savedUser);
+              setUser(parsedUser);
+              if (parsedUser.role === 'teacher') {
+                setCurrentView('teacher_dashboard');
+              } else {
+                setCurrentView('student_dashboard');
+              }
+            } else {
+              setCurrentView('auth');
+            }
+          }
+
+          // Load local draft if available
+          const localDraft = localStorage.getItem('rb_current_draft');
+          if (localDraft) {
+            setNewsDraft(JSON.parse(localDraft));
+          }
+        }, []);
+
+        // Save local draft auto sync
+        useEffect(() => {
+          if (newsDraft.id) {
+            localStorage.setItem('rb_current_draft', JSON.stringify(newsDraft));
+          }
+        }, [newsDraft]);
+
+        // Firebase Sync for Teacher & Gallery
+        useEffect(() => {
+          if (!window.db) return;
+          try {
+            const appId = window.appId || 'rancang-berita-app';
+            const newsCol = collection(window.db, 'artifacts', appId, 'public', 'data', 'published_news');
+            
+            const unsubscribe = onSnapshot(newsCol, (snapshot) => {
+              const newsList = [];
+              snapshot.forEach((docSnap) => {
+                newsList.push({ id: docSnap.id, ...docSnap.data() });
+              });
+              // Sort by date newest first
+              newsList.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+              setAllPublishedNews(newsList);
+            }, (error) => {
+              console.log("Firestore sync notice (using local storage fallback):", error);
+              // Fallback to localStorage
+              const localPublished = localStorage.getItem('rb_published_all');
+              if (localPublished) setAllPublishedNews(JSON.parse(localPublished));
+            });
+
+            return () => unsubscribe();
+          } catch(e) {
+            console.log("Firebase listener error:", e);
+          }
+        }, []);
+
+        // Show toast helper
+        const showToast = (msg, type = 'success') => {
+          setToastMessage({ msg, type });
+          setTimeout(() => setToastMessage(null), 3500);
+        };
+
+        // Trigger confetti celebration
+        const triggerConfetti = () => {
+          if (window.confetti) {
+            window.confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+          }
+        };
+
+        // Reset News Draft for starting fresh new news
+        const handleStartNewNews = () => {
+          const newDraft = {
+            id: 'draft_' + Date.now(),
+            title: '',
+            event: '',
+            category: 'Sekolah',
+            location: '',
+            datetime: '',
+            parties: '',
+            sourceName: '',
+            sourceQuote: '',
+            facts: '',
+            chronology: '',
+            background: '',
+            evidence: '',
+            factsList: [
+              { text: '', source: '', category: 'Fakta' },
+              { text: '', source: '', category: 'Fakta' },
+              { text: '', source: '', category: 'Fakta' },
+              { text: '', source: '', category: 'Fakta' },
+              { text: '', source: '', category: 'Fakta' }
+            ],
+            fiveW1H: {
+              what: { text: '', status: 'isi' },
+              who: { text: '', status: 'isi' },
+              where: { text: '', status: 'isi' },
+              when: { text: '', status: 'isi' },
+              why: { text: '', status: 'isi' },
+              how: { text: '', status: 'isi' }
+            },
+            structure: { lead: '', body: '', ending: '' },
+            editedNews: { lead: '', body: '', ending: '' },
+            missionProgress: { bahan: false, misi1: false, misi2: false, misi3: false, misi4: false, published: false }
+          };
+          setNewsDraft(newDraft);
+          localStorage.removeItem('rb_current_draft');
+          setCurrentView('form_bahan');
+          showToast('Formulir berhasil di-reset! Silakan tulis berita baru.', 'info');
+        };
+
+        // Save Evaluation from Teacher
+        const handleSaveAssessment = (newsId, gradeData) => {
+          const updated = allPublishedNews.map(item => {
+            if (item.id === newsId) {
+              return { ...item, assessment: gradeData };
+            }
+            return item;
+          });
+          setAllPublishedNews(updated);
+          localStorage.setItem('rb_published_all', JSON.stringify(updated));
+
+          // Sync to Firebase if available
+          if (window.db) {
+            try {
+              const appId = window.appId || 'rancang-berita-app';
+              const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', 'published_news', newsId);
+              updateDoc(docRef, { assessment: gradeData });
+            } catch(e) {
+              console.log("Err updating doc", e);
+            }
+          }
+
+          showToast('Penilaian dan Umpan Balik berhasil disimpan!');
+        };
+
+        // Re-render Lucide icons when view changes
+        useEffect(() => {
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        }, [currentView, user, newsDraft]);
+
+        // ==========================================
+        // SUB-COMPONENTS & VIEWS
+        // ==========================================
+
+        // 1. Server Access View
+        const ServerAccessView = () => {
+          const [passInput, setPassInput] = useState('');
+          const [showPass, setShowPass] = useState(false);
+          const [error, setError] = useState('');
+
+          const handleServerSubmit = (e) => {
+            e.preventDefault();
+            if (passInput === '1234') {
+              setServerAuthenticated(true);
+              localStorage.setItem('rb_server_auth', 'true');
+              setCurrentView('auth');
+              showToast('Akses server berhasil disetujui!');
+            } else {
+              setError('Password Server salah! Gunakan kode server yang valid.');
+            }
+          };
+
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-900 via-brand-800 to-blue-950 text-white">
+              <div className="max-w-md w-full bg-white text-slate-800 rounded-3xl p-8 shadow-2xl border border-blue-100 relative overflow-hidden">
+                <div className="absolute -right-10 -top-10 w-32 h-32 bg-yellow-400/20 rounded-full blur-xl"></div>
+                
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-brand-100 text-brand-800 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner border border-brand-200">
+                    <i data-lucide="newspaper" className="w-10 h-10"></i>
+                  </div>
+                  <h1 className="text-3xl font-extrabold text-brand-900">Rancang Berita</h1>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-700 mt-1">
+                    Karya: Shabrina Luh Nayank Sakti, S.S.
+                  </p>
+                  <p className="text-sm text-slate-600 mt-3 font-medium italic">
+                    "Rancang Faktanya, Susun Beritanya, Publikasikan Karyanya!"
+                  </p>
+                </div>
+
+                <form onSubmit={handleServerSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                      Password Server Utama
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={passInput}
+                        onChange={(e) => { setPassInput(e.target.value); setError(''); }}
+                        placeholder="Masukkan Password Server..."
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none pr-12 font-mono text-center text-lg tracking-wider"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                      >
+                        <i data-lucide={showPass ? "eye-off" : "eye"} className="w-5 h-5"></i>
+                      </button>
+                    </div>
+                    {error && <p className="text-red-500 text-xs mt-2 font-medium">{error}</p>}
+                    <p className="text-[11px] text-slate-500 mt-2 text-center">
+                      *Gunakan password server: <strong className="text-brand-700">1234</strong>
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Masuk ke Rancang Berita</span>
+                    <i data-lucide="arrow-right" className="w-5 h-5"></i>
+                  </button>
+                </form>
+
+                <div className="mt-8 pt-4 border-t border-slate-100 text-center">
+                  <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">
+                    SMA Interaktif Bahasa Indonesia
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 2. Auth & Student/Teacher Selection
+        const AuthView = () => {
+          const [mode, setMode] = useState('student'); // student | teacher
+          
+          // Student Form State
+          const [studentName, setStudentName] = useState('');
+          const [studentClass, setStudentClass] = useState('XI-1');
+          const [absentNo, setAbsentNo] = useState('');
+          const [studentPass, setStudentPass] = useState('');
+
+          // Teacher Form State
+          const [teacherPass, setTeacherPass] = useState('');
+          const [teacherError, setTeacherError] = useState('');
+
+          const handleStudentAuth = (e) => {
+            e.preventDefault();
+            if (!studentName.trim() || !absentNo || !studentPass) {
+              showToast('Mohon lengkapi seluruh kolom formulir!', 'error');
+              return;
+            }
+
+            const userData = {
+              name: studentName.trim(),
+              class: studentClass,
+              absentNo: absentNo,
+              role: 'student',
+              avatar: 'male' // default
+            };
+            setUser(userData);
+            localStorage.setItem('rb_user', JSON.stringify(userData));
+            
+            // Check if draft initialized
+            if (!newsDraft.id) {
+              setNewsDraft(prev => ({ ...prev, id: 'draft_' + Date.now() }));
+            }
+
+            setCurrentView('avatar_select');
+          };
+
+          const handleTeacherAuth = (e) => {
+            e.preventDefault();
+            if (teacherPass === '1234') {
+              const teacherUser = {
+                name: 'Shabrina Luh Nayank Sakti, S.S.',
+                role: 'teacher',
+                title: 'Guru Pengampu Bahasa Indonesia'
+              };
+              setUser(teacherUser);
+              localStorage.setItem('rb_user', JSON.stringify(teacherUser));
+              setCurrentView('teacher_dashboard');
+              showToast('Selamat datang Guru Shabrina!');
+            } else {
+              setTeacherError('Password Guru salah! (Gunakan: 1234)');
+            }
+          };
+
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-blue-50">
+              <div className="max-w-xl w-full bg-white rounded-3xl p-8 shadow-xl border border-blue-100">
+                <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-8">
+                  <button
+                    onClick={() => setMode('student')}
+                    className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                      mode === 'student' ? 'bg-white text-brand-800 shadow-md' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i data-lucide="user-check" className="w-4 h-4"></i>
+                    <span>Akses Siswa</span>
+                  </button>
+                  <button
+                    onClick={() => setMode('teacher')}
+                    className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                      mode === 'teacher' ? 'bg-white text-brand-800 shadow-md' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <i data-lucide="award" className="w-4 h-4"></i>
+                    <span>Akses Guru (Shabrina, S.S.)</span>
+                  </button>
+                </div>
+
+                {mode === 'student' ? (
+                  <form onSubmit={handleStudentAuth} className="space-y-4">
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-extrabold text-brand-900">Masuk Portal Siswa</h2>
+                      <p className="text-xs text-slate-500 mt-1">Isi identitas diri untuk memulai misi jurnalistikmu!</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap Siswa</label>
+                      <input
+                        type="text"
+                        required
+                        value={studentName}
+                        onChange={e => setStudentName(e.target.value)}
+                        placeholder="Contoh: Budi Santoso"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pilih Kelas</label>
+                        <select
+                          value={studentClass}
+                          onChange={e => setStudentClass(e.target.value)}
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none font-bold text-brand-800"
+                        >
+                          {CLASS_OPTIONS.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nomor Absen</label>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          max="50"
+                          value={absentNo}
+                          onChange={e => setAbsentNo(e.target.value)}
+                          placeholder="Nomor Absen..."
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Password Akun Siswa</label>
+                      <input
+                        type="password"
+                        required
+                        value={studentPass}
+                        onChange={e => setStudentPass(e.target.value)}
+                        placeholder="Masukkan password bebas..."
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full mt-4 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>Lanjutkan Pilih Avatar</span>
+                      <i data-lucide="arrow-right" className="w-5 h-5"></i>
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleTeacherAuth} className="space-y-4 py-4">
+                    <div className="text-center mb-6">
+                      <div className="w-16 h-16 bg-yellow-100 text-yellow-700 rounded-full flex items-center justify-center mx-auto mb-2 border border-yellow-300">
+                        <i data-lucide="shield-check" className="w-8 h-8"></i>
+                      </div>
+                      <h2 className="text-2xl font-extrabold text-brand-900">Login Guru Pengampu</h2>
+                      <p className="text-xs text-slate-600 mt-1 font-semibold">Guru Shabrina Luh Nayank Sakti, S.S.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Password Otentikasi Guru</label>
+                      <input
+                        type="password"
+                        required
+                        value={teacherPass}
+                        onChange={e => { setTeacherPass(e.target.value); setTeacherError(''); }}
+                        placeholder="Password Guru..."
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 text-center font-mono text-lg"
+                      />
+                      {teacherError && <p className="text-red-500 text-xs mt-2 text-center font-semibold">{teacherError}</p>}
+                      <p className="text-[11px] text-slate-500 mt-2 text-center">
+                        *Gunakan Password Guru: <strong className="text-brand-800">1234</strong>
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3.5 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>Masuk Portal Penilaian Guru</span>
+                      <i data-lucide="arrow-right" className="w-5 h-5"></i>
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // 3. Avatar Select View
+        const AvatarSelectView = () => {
+          const [selected, setSelected] = useState(user?.avatar || 'male');
+
+          const handleSave = () => {
+            const updatedUser = { ...user, avatar: selected };
+            setUser(updatedUser);
+            localStorage.setItem('rb_user', JSON.stringify(updatedUser));
+            setCurrentView('student_dashboard');
+            showToast('Avatar berhasil disimpan!');
+          };
+
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-blue-50">
+              <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl text-center border border-blue-100">
+                <h2 className="text-2xl font-extrabold text-brand-900 mb-2">Pilih Avatar Seragam SMA</h2>
+                <p className="text-xs text-slate-500 mb-6">Pilih karakter jurnalis SMA yang mewakili dirimu!</p>
+
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div
+                    onClick={() => setSelected('male')}
+                    className={`cursor-pointer p-5 rounded-2xl border-2 transition-all text-center ${
+                      selected === 'male' ? 'border-brand-600 bg-blue-50/80 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="w-24 h-24 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center text-4xl shadow-inner">
+                      👨‍🎓
+                    </div>
+                    <span className="block font-bold text-slate-800 text-sm">Siswa Putra</span>
+                    <span className="text-[11px] text-slate-500">Seragam Putih Abu-abu</span>
+                  </div>
+
+                  <div
+                    onClick={() => setSelected('female')}
+                    className={`cursor-pointer p-5 rounded-2xl border-2 transition-all text-center ${
+                      selected === 'female' ? 'border-brand-600 bg-blue-50/80 shadow-md scale-105' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="w-24 h-24 mx-auto mb-3 bg-pink-100 rounded-full flex items-center justify-center text-4xl shadow-inner">
+                      👩‍🎓
+                    </div>
+                    <span className="block font-bold text-slate-800 text-sm">Siswa Putri</span>
+                    <span className="text-[11px] text-slate-500">Seragam Putih Abu-abu</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  className="w-full py-3.5 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg transition-all"
+                >
+                  Simpan Avatar & Buka Dashboard
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        // Navigation Header Component
+        const Header = () => (
+          <header className="bg-white border-b border-blue-100 sticky top-0 z-40 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div 
+                onClick={() => setCurrentView(user?.role === 'teacher' ? 'teacher_dashboard' : 'student_dashboard')} 
+                className="flex items-center gap-3 cursor-pointer"
+              >
+                <div className="w-10 h-10 bg-brand-800 text-white rounded-xl flex items-center justify-center shadow-md">
+                  <i data-lucide="newspaper" className="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-brand-900 leading-none text-lg">Rancang Berita</h1>
+                  <p className="text-[10px] text-brand-700 font-bold uppercase tracking-wider">SMA Bahasa Indonesia</p>
+                </div>
+              </div>
+
+              {user && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setCurrentView('gallery')}
+                    className="px-3 py-1.5 bg-blue-50 text-brand-800 hover:bg-blue-100 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                  >
+                    <i data-lucide="grid" className="w-4 h-4"></i>
+                    <span className="hidden sm:inline">Galeri Karya</span>
+                  </button>
+
+                  <div className="h-6 w-px bg-slate-200"></div>
+
+                  <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                    <span className="text-xl">
+                      {user.role === 'teacher' ? '👩‍🏫' : (user.avatar === 'male' ? '👨‍🎓' : '👩‍🎓')}
+                    </span>
+                    <div className="text-left">
+                      <span className="block font-bold text-xs text-slate-800 leading-tight">
+                        {user.name}
+                      </span>
+                      <span className="block text-[10px] text-slate-500 font-medium">
+                        {user.role === 'teacher' ? 'Guru Pengampu' : `Kelas ${user.class} (Absen ${user.absentNo})`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('rb_user');
+                      setUser(null);
+                      setCurrentView('auth');
+                    }}
+                    title="Keluar"
+                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg transition-all"
+                  >
+                    <i data-lucide="log-out" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+        );
+
+        // 4. Student Dashboard & Mission Map View
+        const StudentDashboardView = () => {
+          const prog = newsDraft.missionProgress || {};
+
+          return (
+            <div className="max-w-5xl mx-auto px-4 py-8">
+              {/* Student Header Card */}
+              <div className="bg-gradient-to-r from-brand-800 to-blue-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
+                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 skew-x-12"></div>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/10 rounded-2xl flex items-center justify-center text-5xl backdrop-blur-md shadow-inner border border-white/20">
+                    {user?.avatar === 'female' ? '👩‍🎓' : '👨‍🎓'}
+                  </div>
+                  <div className="text-center sm:text-left flex-1">
+                    <span className="px-3 py-1 bg-yellow-400 text-slate-900 rounded-full text-xs font-black tracking-wide inline-block mb-2">
+                      JURNALIS SMA - KELAS {user?.class}
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold">Halo, {user?.name}!</h2>
+                    <p className="text-sm text-blue-100 mt-1">
+                      Nomor Absen: <strong>{user?.absentNo}</strong> • Siap menyusun berita informatif berkualitas hari ini?
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleStartNewNews}
+                      className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+                    >
+                      <i data-lucide="plus-circle" className="w-4 h-4"></i>
+                      <span>Tulis Berita Baru</span>
+                    </button>
+                    {prog.published && (
+                      <span className="text-center text-[11px] text-green-300 font-bold bg-green-950/40 px-2 py-1 rounded-lg">
+                        ✓ Berita Terakhir Terpublikasi
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mission Map Section */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-brand-900">Peta Misi Jurnalistik</h3>
+                    <p className="text-xs text-slate-500">Selesaikan setiap misi secara berurutan untuk mempublikasikan berita</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('form_bahan')}
+                    className="px-4 py-2 bg-brand-800 text-white hover:bg-brand-900 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <i data-lucide="file-edit" className="w-4 h-4"></i>
+                    <span>{prog.bahan ? "Edit Bahan Berita" : "Isi Bahan Berita Awal"}</span>
+                  </button>
+                </div>
+
+                {/* Initial Step Card */}
+                {!prog.bahan && (
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 mb-6 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-amber-400 text-slate-900 rounded-xl flex items-center justify-center font-bold text-xl">
+                        📌
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-800 text-sm">Langkah Pertama: Isi Bahan Berita</h4>
+                        <p className="text-xs text-slate-600">Kamu harus menentukan peristiwa & fakta awal sebelum membuka Misi 1.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setCurrentView('form_bahan')}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl text-xs shadow transition-all"
+                    >
+                      Isi Formulir Sekarang
+                    </button>
+                  </div>
+                )}
+
+                {/* 4 Mission Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Mission 1 */}
+                  <div className={`p-6 rounded-3xl border-2 transition-all relative overflow-hidden ${
+                    !prog.bahan 
+                      ? 'bg-slate-100 border-slate-200 opacity-65' 
+                      : (prog.misi1 ? 'bg-white border-green-500 shadow-sm' : 'bg-white border-brand-500 shadow-md')
+                  }`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 bg-blue-100 text-brand-800 rounded-2xl flex items-center justify-center font-bold text-lg">
+                        🔍
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold ${
+                        prog.misi1 ? 'bg-green-100 text-green-700' : (prog.bahan ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-200 text-slate-600')
+                      }`}>
+                        {prog.misi1 ? '✓ Selesai' : (prog.bahan ? 'Siap Dikerjakan' : '🔒 Terkunci')}
+                      </span>
+                    </div>
+                    <h4 className="font-extrabold text-lg text-brand-900">Misi 1: Identifikasi Fakta</h4>
+                    <p className="text-xs text-slate-600 mt-1 mb-4">
+                      Temukan dan catat minimal 5 fakta penting yang dapat dibuktikan kebenarannya.
+                    </p>
+                    <button
+                      disabled={!prog.bahan}
+                      onClick={() => setCurrentView('misi1_materi')}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        !prog.bahan 
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                          : 'bg-brand-800 hover:bg-brand-900 text-white shadow'
+                      }`}
+                    >
+                      {prog.misi1 ? 'Buka Kembali Misi 1' : 'Mulai Misi 1'}
+                    </button>
+                  </div>
+
+                  {/* Mission 2 */}
+                  <div className={`p-6 rounded-3xl border-2 transition-all relative overflow-hidden ${
+                    !prog.misi1 
+                      ? 'bg-slate-100 border-slate-200 opacity-65' 
+                      : (prog.misi2 ? 'bg-white border-green-500 shadow-sm' : 'bg-white border-brand-500 shadow-md')
+                  }`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 bg-indigo-100 text-indigo-800 rounded-2xl flex items-center justify-center font-bold text-lg">
+                        📰
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold ${
+                        prog.misi2 ? 'bg-green-100 text-green-700' : (prog.misi1 ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-200 text-slate-600')
+                      }`}>
+                        {prog.misi2 ? '✓ Selesai' : (prog.misi1 ? 'Siap Dikerjakan' : '🔒 Terkunci')}
+                      </span>
+                    </div>
+                    <h4 className="font-extrabold text-lg text-brand-900">Misi 2: Deteksi 5W + 1H</h4>
+                    <p className="text-xs text-slate-600 mt-1 mb-4">
+                      Lengkapi 6 unsur utama berita: Apa, Siapa, Di mana, Kapan, Mengapa, dan Bagaimana.
+                    </p>
+                    <button
+                      disabled={!prog.misi1}
+                      onClick={() => setCurrentView('misi2_materi')}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        !prog.misi1 
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                          : 'bg-brand-800 hover:bg-brand-900 text-white shadow'
+                      }`}
+                    >
+                      {prog.misi2 ? 'Buka Kembali Misi 2' : 'Mulai Misi 2'}
+                    </button>
+                  </div>
+
+                  {/* Mission 3 */}
+                  <div className={`p-6 rounded-3xl border-2 transition-all relative overflow-hidden ${
+                    !prog.misi2 
+                      ? 'bg-slate-100 border-slate-200 opacity-65' 
+                      : (prog.misi3 ? 'bg-white border-green-500 shadow-sm' : 'bg-white border-brand-500 shadow-md')
+                  }`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center font-bold text-lg">
+                        📐
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold ${
+                        prog.misi3 ? 'bg-green-100 text-green-700' : (prog.misi2 ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-200 text-slate-600')
+                      }`}>
+                        {prog.misi3 ? '✓ Selesai' : (prog.misi2 ? 'Siap Dikerjakan' : '🔒 Terkunci')}
+                      </span>
+                    </div>
+                    <h4 className="font-extrabold text-lg text-brand-900">Misi 3: Struktur Berita</h4>
+                    <p className="text-xs text-slate-600 mt-1 mb-4">
+                      Susun berita menjadi 3 bagian: Kepala (Lead), Tubuh (Body), dan Ekor (Ending).
+                    </p>
+                    <button
+                      disabled={!prog.misi2}
+                      onClick={() => setCurrentView('misi3_materi')}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        !prog.misi2 
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                          : 'bg-brand-800 hover:bg-brand-900 text-white shadow'
+                      }`}
+                    >
+                      {prog.misi3 ? 'Buka Kembali Misi 3' : 'Mulai Misi 3'}
+                    </button>
+                  </div>
+
+                  {/* Mission 4 */}
+                  <div className={`p-6 rounded-3xl border-2 transition-all relative overflow-hidden ${
+                    !prog.misi3 
+                      ? 'bg-slate-100 border-slate-200 opacity-65' 
+                      : (prog.misi4 ? 'bg-white border-green-500 shadow-sm' : 'bg-white border-brand-500 shadow-md')
+                  }`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-12 h-12 bg-purple-100 text-purple-800 rounded-2xl flex items-center justify-center font-bold text-lg">
+                        ✍️
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold ${
+                        prog.misi4 ? 'bg-green-100 text-green-700' : (prog.misi3 ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-200 text-slate-600')
+                      }`}>
+                        {prog.misi4 ? '✓ Selesai' : (prog.misi3 ? 'Siap Dikerjakan' : '🔒 Terkunci')}
+                      </span>
+                    </div>
+                    <h4 className="font-extrabold text-lg text-brand-900">Misi 4: Penyuntingan Kebahasaan</h4>
+                    <p className="text-xs text-slate-600 mt-1 mb-4">
+                      Sunting ejaan EYD, kalimat efektif, verba mental & konjungsi dengan bantuan AI Checker.
+                    </p>
+                    <button
+                      disabled={!prog.misi3}
+                      onClick={() => setCurrentView('misi4_materi')}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        !prog.misi3 
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                          : 'bg-brand-800 hover:bg-brand-900 text-white shadow'
+                      }`}
+                    >
+                      {prog.misi4 ? 'Buka Kembali Misi 4' : 'Mulai Misi 4'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action to Publish */}
+              {prog.misi4 && (
+                <div className="bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-extrabold text-xl">🎉 Semua Misi Berhasil Ditingkatkan!</h3>
+                    <p className="text-xs text-green-100 mt-1">Draf berita kamu sudah lengkap dan siap untuk dipublikasikan ke Koran Sekolah.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('preview_publish')}
+                    className="px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-2xl text-xs shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <span>Pratinjau & Publikasikan Berita</span>
+                    <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // 5. Form Bahan Berita View
+        const FormBahanView = () => {
+          const [formData, setFormData] = useState({
+            title: newsDraft.title || '',
+            event: newsDraft.event || '',
+            category: newsDraft.category || 'Sekolah',
+            location: newsDraft.location || '',
+            datetime: newsDraft.datetime || '',
+            parties: newsDraft.parties || '',
+            sourceName: newsDraft.sourceName || '',
+            sourceQuote: newsDraft.sourceQuote || '',
+            chronology: newsDraft.chronology || '',
+            background: newsDraft.background || ''
+          });
+
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            if (!formData.title || !formData.event || !formData.location || !formData.datetime || !formData.parties) {
+              showToast('Mohon lengkapi seluruh kolom wajib!', 'error');
+              return;
+            }
+
+            const updatedDraft = {
+              ...newsDraft,
+              ...formData,
+              missionProgress: {
+                ...newsDraft.missionProgress,
+                bahan: true
+              }
+            };
+
+            setNewsDraft(updatedDraft);
+            localStorage.setItem('rb_current_draft', JSON.stringify(updatedDraft));
+            showToast('Bahan berita berhasil disimpan!');
+            setCurrentView('misi1_materi');
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-blue-100">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-brand-900">Siapkan Bahan Beritamu!</h2>
+                    <p className="text-xs text-slate-500">Tentukan peristiwa aktual yang ingin kamu angkat menjadi berita sekolah.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('student_dashboard')}
+                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200"
+                  >
+                    Kembali
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Judul Sementara Berita *</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={e => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Contoh: SMA Negeri 1 Gelar Pentas Seni Budaya Penuh Kemeriahan"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kategori Peristiwa</label>
+                      <select
+                        value={formData.category}
+                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-brand-800"
+                      >
+                        <option value="Sekolah">Kegiatan Sekolah</option>
+                        <option value="Prestasi">Prestasi Siswa</option>
+                        <option value="Sosial">Kegiatan Sosial & Lingkungan</option>
+                        <option value="Pendidikan">Teknologi & Pendidikan</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Waktu & Tanggal Kejadian *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.datetime}
+                        onChange={e => setFormData({ ...formData, datetime: e.target.value })}
+                        placeholder="Contoh: Senin, 24 Oktober 2026, pukul 08.00 WIB"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Peristiwa Utama Yang Terjadi *</label>
+                    <textarea
+                      required
+                      rows="3"
+                      value={formData.event}
+                      onChange={e => setFormData({ ...formData, event: e.target.value })}
+                      placeholder="Jelaskan secara singkat peristiwa apa yang terjadi..."
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Lokasi Kejadian *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.location}
+                        onChange={e => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Contoh: Aula Utama SMA Negeri 1"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pihak Yang Terlibat *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.parties}
+                        onChange={e => setFormData({ ...formData, parties: e.target.value })}
+                        placeholder="Contoh: Seluruh siswa kelas XI dan Guru Pembina"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nama / Identitas Narasumber</label>
+                      <input
+                        type="text"
+                        value={formData.sourceName}
+                        onChange={e => setFormData({ ...formData, sourceName: e.target.value })}
+                        placeholder="Contoh: Drs. Ahmad (Kepala Sekolah)"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kutipan / Pernyataan Narasumber</label>
+                      <input
+                        type="text"
+                        value={formData.sourceQuote}
+                        onChange={e => setFormData({ ...formData, sourceQuote: e.target.value })}
+                        placeholder='Contoh: "Kegiatan ini bertujuan melatih kreativitas siswa."'
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Kronologi Singkat / Alasan Peristiwa</label>
+                    <textarea
+                      rows="3"
+                      value={formData.chronology}
+                      onChange={e => setFormData({ ...formData, chronology: e.target.value })}
+                      placeholder="Jelaskan urutan kejadian atau latar belakang peristiwa secara singkat..."
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs"
+                    >
+                      <span>Simpan Bahan & Lanjut Misi 1</span>
+                      <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          );
+        };
+
+        // 6. Mission 1: Facts Identification (Materi + Work)
+        const Misi1MateriView = () => (
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+              <span className="px-3 py-1 bg-blue-100 text-brand-800 rounded-full text-xs font-extrabold uppercase tracking-wide">
+                Misi 1 — Pembekalan Materi
+              </span>
+              <h2 className="text-3xl font-extrabold text-brand-900 mt-2 mb-4">Identifikasi Fakta Berita</h2>
+              
+              <div className="space-y-4 text-slate-700 text-sm leading-relaxed mb-8">
+                <p>
+                  Sebuah berita yang baik dan tepercaya harus berlandaskan <strong>fakta yang dapat dibuktikan kebenarannya</strong>, bukan sekadar opini atau gosip semata.
+                </p>
+
+                <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200">
+                  <h4 className="font-extrabold text-brand-900 mb-2">📌 Ciri-Ciri Utama Fakta:</h4>
+                  <ul className="list-disc list-inside space-y-2 text-xs font-medium">
+                    <li><strong>Dapat Dibuktikan Kebenarannya:</strong> Memiliki bukti nyata seperti dokumen, data resmi, pengamatan langsung, atau kutipan narasumber terpercaya.</li>
+                    <li><strong>Objektif:</strong> Menyajikan data nyata (angka, tanggal, lokasi, nama) tanpa prasangka atau perasaan subjektif penulis.</li>
+                    <li><strong>Dapat Diverifikasi:</strong> Sumber informasi jelas dan dapat diperiksa ulang oleh pembaca.</li>
+                  </ul>
+                </div>
+
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium">
+                  <strong>Catatan Jurnalistik:</strong> Jika suatu informasi belum memiliki bukti atau sumber pasti, beri tanda <em>"Perlu Diverifikasi"</em> dan jangan langsung diklaim sebagai fakta mutlak!
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => setCurrentView('student_dashboard')}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl"
+                >
+                  Kembali ke Dashboard
+                </button>
+                <button
+                  onClick={() => setCurrentView('misi1_work')}
+                  className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                >
+                  <span>Kerjakan Misi 1 Sekarang</span>
+                  <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const Misi1WorkView = () => {
+          const [facts, setFacts] = useState(newsDraft.factsList || [
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' },
+            { text: '', source: '', category: 'Fakta' }
+          ]);
+
+          const handleAddFact = () => {
+            setFacts([...facts, { text: '', source: '', category: 'Fakta' }]);
+          };
+
+          const handleSaveMission = () => {
+            const validFacts = facts.filter(f => f.text.trim() !== '');
+            if (validFacts.length < 5) {
+              showToast('Wajib mengidentifikasi minimal 5 fakta!', 'error');
+              return;
+            }
+
+            const updatedDraft = {
+              ...newsDraft,
+              factsList: facts,
+              missionProgress: {
+                ...newsDraft.missionProgress,
+                misi1: true
+              }
+            };
+            setNewsDraft(updatedDraft);
+            localStorage.setItem('rb_current_draft', JSON.stringify(updatedDraft));
+            showToast('Misi 1 Berhasil Diselesaikan!');
+            setCurrentView('misi2_materi');
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-brand-900">Misi 1: Catat 5 Fakta Beritamu</h2>
+                    <p className="text-xs text-slate-500">Tuliskan minimal 5 fakta konkrit dari bahan beritamu beserta sumber bukunya.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('misi1_materi')}
+                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold"
+                  >
+                    Buka Materi
+                  </button>
+                </div>
+
+                {/* News Reference Summary */}
+                <div className="bg-blue-50/60 p-4 rounded-2xl mb-6 border border-blue-100 text-xs space-y-1">
+                  <span className="font-extrabold text-brand-900 uppercase tracking-wider block mb-1">Acuan Bahan Berita Kamu:</span>
+                  <p><strong>Judul:</strong> {newsDraft.title || '-'}</p>
+                  <p><strong>Peristiwa:</strong> {newsDraft.event || '-'}</p>
+                  <p><strong>Lokasi & Waktu:</strong> {newsDraft.location} ({newsDraft.datetime})</p>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  {facts.map((fact, index) => (
+                    <div key={index} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-brand-800 bg-blue-100 px-3 py-0.5 rounded-full">
+                          Fakta #{index + 1}
+                        </span>
+                        {facts.length > 5 && (
+                          <button
+                            onClick={() => setFacts(facts.filter((_, i) => i !== index))}
+                            className="text-red-500 text-xs hover:underline font-bold"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <input
+                            type="text"
+                            value={fact.text}
+                            onChange={e => {
+                              const updated = [...facts];
+                              updated[index].text = e.target.value;
+                              setFacts(updated);
+                            }}
+                            placeholder="Tuliskan pernyataan fakta di sini..."
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                          />
+                        </div>
+
+                        <div>
+                          <select
+                            value={fact.category}
+                            onChange={e => {
+                              const updated = [...facts];
+                              updated[index].category = e.target.value;
+                              setFacts(updated);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700"
+                          >
+                            <option value="Fakta">Fakta Objektif</option>
+                            <option value="Opini">Opini Narasumber</option>
+                            <option value="Perlu Diverifikasi">Perlu Diverifikasi</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="text"
+                          value={fact.source}
+                          onChange={e => {
+                            const updated = [...facts];
+                            updated[index].source = e.target.value;
+                            setFacts(updated);
+                          }}
+                          placeholder="Bukti / Sumber Pendukung (Contoh: Surat Edaran / Pengamatan Langsung)"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-600"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    onClick={handleAddFact}
+                    className="px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5"
+                  >
+                    <i data-lucide="plus" className="w-4 h-4"></i>
+                    <span>Tambah Kolom Fakta</span>
+                  </button>
+
+                  <button
+                    onClick={handleSaveMission}
+                    className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                  >
+                    <span>Selesaikan Misi 1 & Lanjut Misi 2</span>
+                    <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 7. Mission 2: 5W+1H Detection
+        const Misi2MateriView = () => (
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+              <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-extrabold uppercase tracking-wide">
+                Misi 2 — Pembekalan Materi
+              </span>
+              <h2 className="text-3xl font-extrabold text-brand-900 mt-2 mb-4">Unsur-Unsur Berita 5W + 1H</h2>
+              
+              <div className="space-y-4 text-slate-700 text-sm leading-relaxed mb-8">
+                <p>
+                  Kelengkapan berita ditentukan oleh keberadaan 6 unsur penting berikut:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                    <strong className="text-brand-900 font-extrabold block text-sm mb-1">1. What (Apa)</strong>
+                    <p>Peristiwa utama apa yang sedang terjadi?</p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-200">
+                    <strong className="text-indigo-900 font-extrabold block text-sm mb-1">2. Who (Siapa)</strong>
+                    <p>Siapa saja pihak yang terlibat atau menjadi sasaran?</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200">
+                    <strong className="text-purple-900 font-extrabold block text-sm mb-1">3. Where (Di mana)</strong>
+                    <p>Di mana lokasi spesifik terjadinya peristiwa?</p>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                    <strong className="text-amber-900 font-extrabold block text-sm mb-1">4. When (Kapan)</strong>
+                    <p>Kapan waktu spesifik peristiwa berlangsung?</p>
+                  </div>
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <strong className="text-emerald-900 font-extrabold block text-sm mb-1">5. Why (Mengapa)</strong>
+                    <p>Apa latar belakang atau alasan terjadinya peristiwa?</p>
+                  </div>
+                  <div className="p-4 bg-rose-50 rounded-2xl border border-rose-200">
+                    <strong className="text-rose-900 font-extrabold block text-sm mb-1">6. How (Bagaimana)</strong>
+                    <p>Bagaimana kronologi, suasana, atau dampak peristiwa?</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => setCurrentView('student_dashboard')}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
+                >
+                  Kembali
+                </button>
+                <button
+                  onClick={() => setCurrentView('misi2_work')}
+                  className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                >
+                  <span>Kerjakan Misi 2 Sekarang</span>
+                  <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const Misi2WorkView = () => {
+          const [fiveW1H, setFiveW1H] = useState(newsDraft.fiveW1H || {
+            what: { text: newsDraft.event || '', status: 'isi' },
+            who: { text: newsDraft.parties || '', status: 'isi' },
+            where: { text: newsDraft.location || '', status: 'isi' },
+            when: { text: newsDraft.datetime || '', status: 'isi' },
+            why: { text: newsDraft.background || '', status: 'isi' },
+            how: { text: newsDraft.chronology || '', status: 'isi' }
+          });
+
+          const handleSaveMission = () => {
+            // Check if all fields have text or marked as 'Belum Ditemukan'
+            const keys = ['what', 'who', 'where', 'when', 'why', 'how'];
+            for (let key of keys) {
+              const item = fiveW1H[key];
+              if (item.status === 'isi' && !item.text.trim()) {
+                showToast(`Mohon isi kolom unsur ${key.toUpperCase()} atau tandai "Belum Ditemukan"!`, 'error');
+                return;
+              }
+            }
+
+            const updatedDraft = {
+              ...newsDraft,
+              fiveW1H,
+              missionProgress: {
+                ...newsDraft.missionProgress,
+                misi2: true
+              }
+            };
+            setNewsDraft(updatedDraft);
+            localStorage.setItem('rb_current_draft', JSON.stringify(updatedDraft));
+            showToast('Misi 2 Berhasil Diselesaikan!');
+            setCurrentView('misi3_materi');
+          };
+
+          const updateItem = (key, text, status) => {
+            setFiveW1H({
+              ...fiveW1H,
+              [key]: { text, status }
+            });
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-brand-900">Misi 2: Deteksi Unsur 5W + 1H</h2>
+                    <p className="text-xs text-slate-500">Petakan unsur peristiwa beritamu secara detail dan lengkap.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('misi2_materi')}
+                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold"
+                  >
+                    Materi
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                  {/* WHAT */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-brand-800 uppercase">WHAT (Apa Peristiwanya?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.what.status === 'belum'}
+                          onChange={e => updateItem('what', fiveW1H.what.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.what.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.what.text}
+                        onChange={e => updateItem('what', e.target.value, 'isi')}
+                        placeholder="Uraikan peristiwa utama yang terjadi..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WHO */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-indigo-800 uppercase">WHO (Siapa Yang Terlibat?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.who.status === 'belum'}
+                          onChange={e => updateItem('who', fiveW1H.who.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.who.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.who.text}
+                        onChange={e => updateItem('who', e.target.value, 'isi')}
+                        placeholder="Tuliskan pihak / pelaku utama..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WHERE */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-purple-800 uppercase">WHERE (Di mana Lokasinya?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.where.status === 'belum'}
+                          onChange={e => updateItem('where', fiveW1H.where.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.where.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.where.text}
+                        onChange={e => updateItem('where', e.target.value, 'isi')}
+                        placeholder="Tuliskan tempat kejadian lengkap..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WHEN */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-amber-800 uppercase">WHEN (Kapan Waktunya?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.when.status === 'belum'}
+                          onChange={e => updateItem('when', fiveW1H.when.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.when.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.when.text}
+                        onChange={e => updateItem('when', e.target.value, 'isi')}
+                        placeholder="Tuliskan hari, tanggal, dan waktu..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WHY */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-emerald-800 uppercase">WHY (Mengapa Terjadi?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.why.status === 'belum'}
+                          onChange={e => updateItem('why', fiveW1H.why.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.why.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.why.text}
+                        onChange={e => updateItem('why', e.target.value, 'isi')}
+                        placeholder="Tuliskan alasan / latar belakang..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+
+                  {/* HOW */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-black text-xs text-rose-800 uppercase">HOW (Bagaimana Kronologinya?)</span>
+                      <label className="text-[11px] flex items-center gap-1 font-bold text-slate-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={fiveW1H.how.status === 'belum'}
+                          onChange={e => updateItem('how', fiveW1H.how.text, e.target.checked ? 'belum' : 'isi')}
+                        />
+                        <span>Belum Ditemukan</span>
+                      </label>
+                    </div>
+                    {fiveW1H.how.status === 'isi' ? (
+                      <textarea
+                        rows="2"
+                        value={fiveW1H.how.text}
+                        onChange={e => updateItem('how', e.target.value, 'isi')}
+                        placeholder="Uraikan jalannya peristiwa secara rinci..."
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    ) : (
+                      <div className="p-3 bg-amber-100 text-amber-900 rounded-xl text-xs font-bold">
+                        ⚠️ Ditandai: Unsur belum ditemukan
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setCurrentView('student_dashboard')}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    onClick={handleSaveMission}
+                    className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                  >
+                    <span>Selesaikan Misi 2 & Lanjut Misi 3</span>
+                    <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Helper: Sentence Counter
+        const countSentences = (text) => {
+          if (!text || !text.trim()) return 0;
+          const matches = text.match(/[^.!?]+[.!?]+/g);
+          return matches ? matches.length : (text.trim().length > 20 ? 1 : 0);
+        };
+
+        // 8. Mission 3: Structure News Writing
+        const Misi3MateriView = () => (
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+              <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-extrabold uppercase tracking-wide">
+                Misi 3 — Pembekalan Materi
+              </span>
+              <h2 className="text-3xl font-extrabold text-brand-900 mt-2 mb-4">Struktur Teks Berita (Piramida Terbalik)</h2>
+              
+              <div className="space-y-4 text-slate-700 text-sm leading-relaxed mb-8">
+                <p>
+                  Teks berita disusun menggunakan struktur <strong>Piramida Terbalik</strong> yang membagi tulisan menjadi 3 bagian utama:
+                </p>
+
+                <div className="space-y-3">
+                  <div className="p-4 bg-blue-50 border-l-4 border-blue-600 rounded-r-2xl">
+                    <strong className="text-brand-900 font-extrabold block text-base">1. Kepala Berita (Lead)</strong>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Bagian pembuka yang berisi inti terpenting dari berita (unsur 5W+1H utama). Pembaca langsung tahu peristiwa apa yang terjadi.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 border-l-4 border-indigo-600 rounded-r-2xl">
+                    <strong className="text-indigo-900 font-extrabold block text-base">2. Tubuh Berita (Body)</strong>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Menjelaskan rincian peristiwa, kronologi detail, alasan kejadian, serta kutipan langsung narasumber.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-slate-100 border-l-4 border-slate-500 rounded-r-2xl">
+                    <strong className="text-slate-800 font-extrabold block text-base">3. Ekor Berita (Ending)</strong>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Memuat informasi tambahan, harapan ke depan, atau penutup berita yang sifatnya pelengkap.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-300 text-xs font-semibold text-amber-900">
+                  ⚠️ <strong>Ketentuan Misi 3:</strong> Setiap bagian (Kepala, Tubuh, dan Ekor) wajib dituliskan <strong>minimal 3 kalimat</strong> agar informasi padat dan padu!
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => setCurrentView('student_dashboard')}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
+                >
+                  Kembali
+                </button>
+                <button
+                  onClick={() => setCurrentView('misi3_work')}
+                  className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                >
+                  <span>Kerjakan Misi 3 Sekarang</span>
+                  <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const Misi3WorkView = () => {
+          const [structure, setStructure] = useState(newsDraft.structure || { lead: '', body: '', ending: '' });
+
+          const leadSentences = useMemo(() => countSentences(structure.lead), [structure.lead]);
+          const bodySentences = useMemo(() => countSentences(structure.body), [structure.body]);
+          const endingSentences = useMemo(() => countSentences(structure.ending), [structure.ending]);
+
+          const handleSaveMission = () => {
+            if (leadSentences < 3 || bodySentences < 3 || endingSentences < 3) {
+              showToast('Setiap bagian (Kepala, Tubuh, Ekor) wajib diisi minimal 3 kalimat!', 'error');
+              return;
+            }
+
+            const updatedDraft = {
+              ...newsDraft,
+              structure,
+              editedNews: {
+                lead: structure.lead,
+                body: structure.body,
+                ending: structure.ending
+              },
+              missionProgress: {
+                ...newsDraft.missionProgress,
+                misi3: true
+              }
+            };
+
+            setNewsDraft(updatedDraft);
+            localStorage.setItem('rb_current_draft', JSON.stringify(updatedDraft));
+            showToast('Misi 3 Berhasil Diselesaikan!');
+            setCurrentView('misi4_materi');
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-brand-900">Misi 3: Susun Struktur Beritamu</h2>
+                    <p className="text-xs text-slate-500">Tuliskan draf teks berita lengkap berdasarkan fakta dan 5W+1H yang kamu kumpulkan.</p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentView('misi3_materi')}
+                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold"
+                  >
+                    Materi
+                  </button>
+                </div>
+
+                <div className="space-y-6 mb-8">
+                  {/* LEAD */}
+                  <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="font-extrabold text-sm text-brand-900">
+                        A. Kepala Berita (Lead) *
+                      </label>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        leadSentences >= 3 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {leadSentences} / 3 Kalimat Minimal
+                      </span>
+                    </div>
+                    <textarea
+                      rows="4"
+                      value={structure.lead}
+                      onChange={e => setStructure({ ...structure, lead: e.target.value })}
+                      placeholder="Tuliskan inti berita terpenting di awal paragraf (minimal 3 kalimat)..."
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                  </div>
+
+                  {/* BODY */}
+                  <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="font-extrabold text-sm text-indigo-900">
+                        B. Tubuh Berita (Body) *
+                      </label>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        bodySentences >= 3 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {bodySentences} / 3 Kalimat Minimal
+                      </span>
+                    </div>
+                    <textarea
+                      rows="5"
+                      value={structure.body}
+                      onChange={e => setStructure({ ...structure, body: e.target.value })}
+                      placeholder="Tuliskan kronologi detail, alasan, serta kutipan narasumber (minimal 3 kalimat)..."
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                  </div>
+
+                  {/* ENDING */}
+                  <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="font-extrabold text-sm text-slate-800">
+                        C. Ekor Berita (Ending) *
+                      </label>
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        endingSentences >= 3 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {endingSentences} / 3 Kalimat Minimal
+                      </span>
+                    </div>
+                    <textarea
+                      rows="4"
+                      value={structure.ending}
+                      onChange={e => setStructure({ ...structure, ending: e.target.value })}
+                      placeholder="Tuliskan penutup, harapan, atau informasi tambahan (minimal 3 kalimat)..."
+                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setCurrentView('student_dashboard')}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    onClick={handleSaveMission}
+                    className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                  >
+                    <span>Selesaikan Misi 3 & Lanjut Misi 4</span>
+                    <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 9. Mission 4: Editing & AI Checker Simulation
+        const Misi4MateriView = () => (
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-extrabold uppercase tracking-wide">
+                Misi 4 — Pembekalan Materi
+              </span>
+              <h2 className="text-3xl font-extrabold text-brand-900 mt-2 mb-4">Penyuntingan & Kaidah Kebahasaan</h2>
+              
+              <div className="space-y-4 text-slate-700 text-sm leading-relaxed mb-8">
+                <p>
+                  Sebelum dipublikasikan, draf berita harus melewati proses penyuntingan kebahasaan:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200">
+                    <strong className="text-purple-900 font-extrabold block text-sm mb-1">1. Ejaan EYD & Tanda Baca</strong>
+                    <p>Penggunaan huruf kapital, tanda titik, koma, serta ejaan kata baku yang tepat.</p>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
+                    <strong className="text-brand-900 font-extrabold block text-sm mb-1">2. Kalimat Langsung</strong>
+                    <p>Penulisan kutipan narasumber menggunakan tanda petik dua ("...") yang sesuai.</p>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                    <strong className="text-amber-900 font-extrabold block text-sm mb-1">3. Konjungsi Temporal</strong>
+                    <p>Kata hubung urutan waktu seperti: <em>kemudian, setelah itu, lalu, sebelumnya</em>.</p>
+                  </div>
+
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <strong className="text-emerald-900 font-extrabold block text-sm mb-1">4. Verba Mental</strong>
+                    <p>Kata kerja yang menunjukkan tanggapan pikiran seperti: <em>menilai, memperkirakan, berharap</em>.</p>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 text-xs font-semibold text-purple-950 flex items-center gap-3">
+                  <i data-lucide="sparkles" className="w-6 h-6 text-purple-600 flex-shrink-0"></i>
+                  <span>Pada Misi 4 ini, kamu akan dibantu oleh <strong>Simulasi AI Kebahasaan</strong> yang siap mendeteksi saran perbaikan pada draf tulisanmu!</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => setCurrentView('student_dashboard')}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
+                >
+                  Kembali
+                </button>
+                <button
+                  onClick={() => setCurrentView('misi4_work')}
+                  className="px-6 py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                >
+                  <span>Mulai Penyuntingan & AI Checker</span>
+                  <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const Misi4WorkView = () => {
+          const [edited, setEdited] = useState(newsDraft.editedNews || newsDraft.structure);
+          const [aiSuggestions, setAiSuggestions] = useState([]);
+          const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+          // Simulated AI Grammar & Style Checker
+          const runAiCheck = () => {
+            setIsAnalyzing(true);
+            setTimeout(() => {
+              const suggestions = [];
+              const fullText = `${edited.lead} ${edited.body} ${edited.ending}`;
+
+              // Rule 1: Check capitalization or common typos
+              if (!/[A-Z]/.test(edited.lead.charAt(0))) {
+                suggestions.push({
+                  id: 1,
+                  type: 'EYD / Kapital',
+                  part: 'lead',
+                  desc: 'Awal paragraf kepala berita sebaiknya diawali huruf kapital.',
+                  original: edited.lead.substring(0, 15) + '...',
+                  suggested: edited.lead.charAt(0).toUpperCase() + edited.lead.slice(1)
+                });
+              }
+
+              // Rule 2: Temporal conjunction check
+              if (!/kemudian|setelah itu|lalu|selanjutnya|sebelumnya/i.test(fullText)) {
+                suggestions.push({
+                  id: 2,
+                  type: 'Konjungsi Temporal',
+                  part: 'body',
+                  desc: 'Tambahkan kata hubung kronologi waktu (misal: "setelah itu" atau "kemudian") di tubuh berita.',
+                  original: 'Urutan peristiwa',
+                  suggested: 'Gunakan kata "kemudian" atau "setelah itu" untuk memperjelas kronologi.'
+                });
+              }
+
+              // Rule 3: Mental verb check
+              if (!/menilai|menjelaskan|berharap|memperkirakan|menegaskan/i.test(fullText)) {
+                suggestions.push({
+                  id: 3,
+                  type: 'Verba Mental',
+                  part: 'body',
+                  desc: 'Gunakan kata kerja mental seperti "menjelaskan", "menilai", atau "berharap" pada tanggapan narasumber.',
+                  original: 'Tanggapan narasumber',
+                  suggested: 'Gunakan verba mental untuk mengekspresikan tanggapan.'
+                });
+              }
+
+              if (suggestions.length === 0) {
+                suggestions.push({
+                  id: 99,
+                  type: 'Pujian AI Kebahasaan',
+                  part: 'lead',
+                  desc: 'Luar biasa! Draf beritamu sudah memenuhi kaidah kebahasaan dan tata ejaan yang baik.',
+                  original: 'Struktur Baik',
+                  suggested: 'Siap dipublikasikan!'
+                });
+              }
+
+              setAiSuggestions(suggestions);
+              setIsAnalyzing(false);
+              showToast('Pemeriksaan AI Kebahasaan selesai!');
+            }, 1200);
+          };
+
+          const handleFinishEditing = () => {
+            const updatedDraft = {
+              ...newsDraft,
+              editedNews: edited,
+              missionProgress: {
+                ...newsDraft.missionProgress,
+                misi4: true
+              }
+            };
+            setNewsDraft(updatedDraft);
+            localStorage.setItem('rb_current_draft', JSON.stringify(updatedDraft));
+            showToast('Misi 4 Selesai! Seluruh Misi Telah Tuntas!');
+            setCurrentView('preview_publish');
+          };
+
+          return (
+            <div className="max-w-6xl mx-auto px-4 py-8">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-brand-900">Misi 4: Editor Penyuntingan Berita</h2>
+                    <p className="text-xs text-slate-500">Perbaiki ejaan, tata kata, dan kebahasaan beritamu sebelum dipublikasikan.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={runAiCheck}
+                      disabled={isAnalyzing}
+                      className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center gap-2"
+                    >
+                      <i data-lucide="sparkles" className="w-4 h-4"></i>
+                      <span>{isAnalyzing ? 'Memeriksa AI...' : 'Periksa Kebahasaan AI'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                  {/* Left Column: 2-Panel Editing */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div>
+                      <label className="block text-xs font-extrabold text-brand-900 uppercase mb-1">
+                        Kepala Berita (Lead)
+                      </label>
+                      <textarea
+                        rows="4"
+                        value={edited.lead}
+                        onChange={e => setEdited({ ...edited, lead: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-indigo-900 uppercase mb-1">
+                        Tubuh Berita (Body)
+                      </label>
+                      <textarea
+                        rows="6"
+                        value={edited.body}
+                        onChange={e => setEdited({ ...edited, body: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-extrabold text-slate-800 uppercase mb-1">
+                        Ekor Berita (Ending)
+                      </label>
+                      <textarea
+                        rows="4"
+                        value={edited.ending}
+                        onChange={e => setEdited({ ...edited, ending: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm leading-relaxed focus:ring-2 focus:ring-brand-500"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  {/* Right Column: AI Suggestions Panel */}
+                  <div className="bg-purple-50/70 p-5 rounded-2xl border border-purple-200">
+                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-purple-200 text-purple-900 font-extrabold text-sm">
+                      <i data-lucide="bot" className="w-5 h-5 text-purple-700"></i>
+                      <span>Panel Saran Kebahasaan AI</span>
+                    </div>
+
+                    {aiSuggestions.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500 text-xs">
+                        <i data-lucide="help-circle" className="w-8 h-8 mx-auto mb-2 text-purple-400"></i>
+                        <p>Klik tombol <strong>"Periksa Kebahasaan AI"</strong> untuk mendapatkan masukan otomatis!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {aiSuggestions.map(sug => (
+                          <div key={sug.id} className="p-3 bg-white rounded-xl shadow-sm border border-purple-100 text-xs space-y-1">
+                            <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded font-bold text-[10px]">
+                              {sug.type}
+                            </span>
+                            <p className="font-semibold text-slate-800">{sug.desc}</p>
+                            <p className="text-[11px] text-slate-500">Saran: <em className="text-purple-900 font-bold">{sug.suggested}</em></p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setCurrentView('student_dashboard')}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs"
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    onClick={handleFinishEditing}
+                    className="px-6 py-3 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs shadow-md flex items-center gap-2"
+                  >
+                    <span>Selesaikan Misi 4 & Pratinjau Koran</span>
+                    <i data-lucide="check-circle" className="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 10. Preview & Final Publication View (With Auto-Reset Option)
+        const PreviewPublishView = () => {
+          const [isPublishing, setIsPublishing] = useState(false);
+          const [publishedSuccess, setPublishedSuccess] = useState(false);
+
+          const handlePublishNow = async () => {
+            setIsPublishing(true);
+
+            const finalPublishedItem = {
+              id: 'news_' + Date.now(),
+              studentName: user.name,
+              studentClass: user.class,
+              absentNo: user.absentNo,
+              avatar: user.avatar,
+              publishedAt: new Date().toISOString(),
+              
+              title: newsDraft.title,
+              category: newsDraft.category,
+              location: newsDraft.location,
+              datetime: newsDraft.datetime,
+              sourceName: newsDraft.sourceName,
+              
+              lead: newsDraft.editedNews.lead || newsDraft.structure.lead,
+              body: newsDraft.editedNews.body || newsDraft.structure.body,
+              ending: newsDraft.editedNews.ending || newsDraft.structure.ending,
+
+              assessment: null // Initial no grade
+            };
+
+            // 1. Save locally
+            const updatedAll = [finalPublishedItem, ...allPublishedNews];
+            setAllPublishedNews(updatedAll);
+            localStorage.setItem('rb_published_all', JSON.stringify(updatedAll));
+
+            // 2. Sync to Firebase Cloud if connected
+            if (window.db) {
+              try {
+                const appId = window.appId || 'rancang-berita-app';
+                const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', 'published_news', finalPublishedItem.id);
+                await setDoc(docRef, finalPublishedItem);
+              } catch(e) {
+                console.log("Error syncing to Firebase:", e);
+              }
+            }
+
+            // Mark draft published
+            setNewsDraft(prev => ({
+              ...prev,
+              missionProgress: { ...prev.missionProgress, published: true }
+            }));
+
+            setIsPublishing(false);
+            setPublishedSuccess(true);
+            triggerConfetti();
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              {publishedSuccess ? (
+                <div className="bg-white rounded-3xl p-8 shadow-2xl text-center border border-green-200">
+                  <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner">
+                    🎉
+                  </div>
+                  <h2 className="text-3xl font-black text-brand-900 mb-2">Berita Berhasil Dipublikasikan!</h2>
+                  <p className="text-sm text-slate-600 max-w-lg mx-auto mb-6">
+                    Selamat <strong>{user.name}</strong>! Berita karya tulisanmu sudah masuk ke Koran Sekolah dan dapat dibaca serta dinilai oleh <strong>Guru Shabrina Luh Nayank Sakti, S.S.</strong>
+                  </p>
+
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 max-w-md mx-auto mb-8 text-xs text-brand-900 font-semibold">
+                    💡 <strong>Siap Menulis Berita Lain?</strong>
+                    <p className="mt-1 text-slate-600">
+                      Klik tombol di bawah ini untuk memulai formulir peristiwa berita baru. Data bahan berita lama akan di-reset agar kamu bisa menulis berita baru dari awal!
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <button
+                      onClick={handleStartNewNews}
+                      className="px-6 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      <i data-lucide="rotate-ccw" className="w-5 h-5"></i>
+                      <span>Tulis Berita Baru (Reset Form)</span>
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentView('gallery')}
+                      className="px-6 py-3.5 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      <i data-lucide="grid" className="w-5 h-5"></i>
+                      <span>Lihat di Galeri Karya</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Font Toggle & Actions Top bar */}
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-slate-700">Pilih Gaya Font Artikel:</span>
+                      <button
+                        onClick={() => setSelectedFont('serif')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold font-newspaper ${
+                          selectedFont === 'serif' ? 'bg-brand-800 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        Times New Roman (Formal Koran)
+                      </button>
+                      <button
+                        onClick={() => setSelectedFont('sans')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold font-sans ${
+                          selectedFont === 'sans' ? 'bg-brand-800 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        Calibri Modern
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentView('misi4_work')}
+                      className="px-4 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
+                    >
+                      Kembali ke Editor
+                    </button>
+                  </div>
+
+                  {/* Newspaper Formal Layout Card */}
+                  <div className={`newspaper-box p-8 sm:p-12 rounded-2xl border border-slate-300 ${
+                    selectedFont === 'serif' ? 'font-newspaper' : 'font-sans'
+                  }`}>
+                    {/* Newspaper Header */}
+                    <div className="text-center pb-6 mb-6 border-b-2 border-slate-900">
+                      <h3 className="text-xs uppercase tracking-widest font-bold text-slate-500 mb-1">
+                        KORAN DIGITAL SISWA SMA — RANCANG BERITA
+                      </h3>
+                      <h1 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-3">
+                        {newsDraft.title || 'Judul Berita'}
+                      </h1>
+
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-600 border-t border-b border-slate-200 py-2">
+                        <span>Penulis: <strong>{user?.name} ({user?.class})</strong></span>
+                        <span>•</span>
+                        <span>Lokasi: <strong>{newsDraft.location}</strong></span>
+                        <span>•</span>
+                        <span>Waktu: <strong>{newsDraft.datetime}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Newspaper Content */}
+                    <div className="space-y-4 text-slate-900 leading-relaxed text-base sm:text-lg">
+                      <p className="first-letter:text-4xl first-letter:font-black first-letter:mr-1 first-letter:float-left first-letter:text-brand-900 font-semibold">
+                        {newsDraft.editedNews.lead || newsDraft.structure.lead}
+                      </p>
+
+                      <p>
+                        {newsDraft.editedNews.body || newsDraft.structure.body}
+                      </p>
+
+                      <p className="text-slate-800">
+                        {newsDraft.editedNews.ending || newsDraft.structure.ending}
+                      </p>
+
+                      {newsDraft.sourceName && (
+                        <div className="mt-6 pt-4 border-t border-slate-200 text-xs italic text-slate-600">
+                          Narasumber Atribusi: <strong>{newsDraft.sourceName}</strong>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Publish Button */}
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-extrabold text-brand-900">Publikasikan Berita Sekarang?</h4>
+                      <p className="text-xs text-slate-500">Berita akan dikirimkan ke Dashboard Guru Shabrina dan Galeri Sekolah.</p>
+                    </div>
+
+                    <button
+                      disabled={isPublishing}
+                      onClick={handlePublishNow}
+                      className="px-8 py-3.5 bg-green-600 hover:bg-green-700 text-white font-extrabold rounded-2xl text-xs shadow-lg transition-all flex items-center gap-2"
+                    >
+                      <i data-lucide="send" className="w-4 h-4"></i>
+                      <span>{isPublishing ? 'Mempublikasikan...' : 'Publikasikan Berita'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // 11. Gallery View (All Published News)
+        const GalleryView = () => {
+          const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
+          const [searchTerm, setSearchTerm] = useState('');
+
+          const filteredNews = allPublishedNews.filter(item => {
+            const matchClass = selectedClassFilter === 'ALL' || item.studentClass === selectedClassFilter;
+            const matchSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                item.studentName?.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchClass && matchSearch;
+          });
+
+          return (
+            <div className="max-w-6xl mx-auto px-4 py-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-3xl font-extrabold text-brand-900">Galeri Berita Karya Siswa</h2>
+                  <p className="text-xs text-slate-500">Kumpulan karya berita jurnalistik siswa SMA dari Kelas XI-1 sampai XI-12.</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      placeholder="Cari judul / nama siswa..."
+                      className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                    />
+                    <i data-lucide="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                  </div>
+
+                  <select
+                    value={selectedClassFilter}
+                    onChange={e => setSelectedClassFilter(e.target.value)}
+                    className="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-brand-800"
+                  >
+                    <option value="ALL">Semua Kelas XI</option>
+                    {CLASS_OPTIONS.map(c => (
+                      <option key={c} value={c}>Kelas {c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {filteredNews.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center text-slate-500 border border-slate-200">
+                  <i data-lucide="newspaper" className="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
+                  <p className="font-bold text-slate-700">Belum Ada Berita Dipublikasikan</p>
+                  <p className="text-xs text-slate-400 mt-1">Jadilah yang pertama menulis dan mempublikasikan berita!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredNews.map(news => (
+                    <div key={news.id} className="bg-white rounded-3xl p-6 shadow-md border border-slate-200 hover:shadow-xl transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="px-3 py-1 bg-blue-100 text-brand-800 font-extrabold text-[11px] rounded-full">
+                            Kelas {news.studentClass}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {new Date(news.publishedAt).toLocaleDateString('id-ID')}
+                          </span>
+                        </div>
+
+                        <h3 className="font-extrabold text-slate-900 text-lg line-clamp-2 mb-2">
+                          {news.title}
+                        </h3>
+
+                        <p className="text-xs text-slate-600 line-clamp-3 mb-4 leading-relaxed font-newspaper">
+                          {news.lead}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">
+                            {news.avatar === 'female' ? '👩‍🎓' : '👨‍🎓'}
+                          </span>
+                          <span className="text-xs font-bold text-slate-800">{news.studentName}</span>
+                        </div>
+
+                        {news.assessment ? (
+                          <span className="px-2.5 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-extrabold">
+                            Nilai: {news.assessment.finalScore}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">Menunggu Penilaian</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // 12. Teacher Dashboard (Guru Shabrina Luh Nayank Sakti, S.S.)
+        const TeacherDashboardView = () => {
+          const [selectedClass, setSelectedClass] = useState('ALL');
+          const [searchQuery, setSearchQuery] = useState('');
+
+          const filteredList = allPublishedNews.filter(item => {
+            const matchClass = selectedClass === 'ALL' || item.studentClass === selectedClass;
+            const matchQuery = item.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              item.title?.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchClass && matchQuery;
+          });
+
+          return (
+            <div className="max-w-7xl mx-auto px-4 py-8">
+              {/* Teacher Welcome Header */}
+              <div className="bg-gradient-to-r from-brand-900 to-blue-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+                  <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-white/20">
+                    👩‍🏫
+                  </div>
+                  <div>
+                    <span className="px-3 py-1 bg-yellow-400 text-slate-900 rounded-full text-xs font-black tracking-wide inline-block mb-1">
+                      PORTAL GURU PENGAMPU
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold">Shabrina Luh Nayank Sakti, S.S.</h2>
+                    <p className="text-xs text-blue-100 mt-1">
+                      Pantau seluruh karya tulisan berita siswa dari Kelas XI-1 hingga XI-12 secara terpusat.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Statistics Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+                <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 text-brand-800 rounded-xl flex items-center justify-center text-xl font-bold">
+                    📰
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 uppercase">Total Berita Terpublikasi</span>
+                    <h3 className="text-2xl font-black text-brand-900">{allPublishedNews.length}</h3>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 text-green-800 rounded-xl flex items-center justify-center text-xl font-bold">
+                    ✅
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 uppercase">Karya Sudah Dinilai</span>
+                    <h3 className="text-2xl font-black text-green-700">
+                      {allPublishedNews.filter(n => n.assessment).length}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center text-xl font-bold">
+                    ⏳
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 uppercase">Perlu Penilaian</span>
+                    <h3 className="text-2xl font-black text-amber-600">
+                      {allPublishedNews.filter(n => !n.assessment).length}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter & Controls */}
+              <div className="bg-white p-6 rounded-3xl shadow-lg border border-blue-100 mb-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                  <h3 className="font-extrabold text-xl text-brand-900">Daftar Publikasi Siswa</h3>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Cari nama siswa / judul..."
+                      className="px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-brand-500"
+                    />
+
+                    <select
+                      value={selectedClass}
+                      onChange={e => setSelectedClass(e.target.value)}
+                      className="px-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-brand-800"
+                    >
+                      <option value="ALL">Semua Kelas XI (XI-1 s.d XI-12)</option>
+                      {CLASS_OPTIONS.map(c => (
+                        <option key={c} value={c}>Kelas {c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Submissions Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-xs font-black text-slate-600 uppercase tracking-wider bg-slate-50">
+                        <th className="p-3">Siswa</th>
+                        <th className="p-3">Kelas / Absen</th>
+                        <th className="p-3">Judul Berita</th>
+                        <th className="p-3">Waktu Terbit</th>
+                        <th className="p-3">Status Penilaian</th>
+                        <th className="p-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs font-medium">
+                      {filteredList.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="p-8 text-center text-slate-400">
+                            Tidak ditemukan data berita siswa yang sesuai.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredList.map(news => (
+                          <tr key={news.id} className="hover:bg-blue-50/50 transition-all">
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{news.avatar === 'female' ? '👩‍🎓' : '👨‍🎓'}</span>
+                                <span className="font-bold text-slate-800">{news.studentName}</span>
+                              </div>
+                            </td>
+                            <td className="p-3 font-bold text-brand-800">
+                              Kelas {news.studentClass} (Absen {news.absentNo})
+                            </td>
+                            <td className="p-3 max-w-xs truncate font-semibold text-slate-700">
+                              {news.title}
+                            </td>
+                            <td className="p-3 text-slate-500">
+                              {new Date(news.publishedAt).toLocaleString('id-ID')}
+                            </td>
+                            <td className="p-3">
+                              {news.assessment ? (
+                                <span className="px-2.5 py-1 bg-green-100 text-green-800 rounded-md font-bold text-[11px]">
+                                  Nilai: {news.assessment.finalScore} / 100
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 bg-yellow-100 text-yellow-800 rounded-md font-bold text-[11px]">
+                                  Belum Dinilai
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedNewsForDetail(news);
+                                  setCurrentView('teacher_detail');
+                                }}
+                                className="px-3 py-1.5 bg-brand-800 hover:bg-brand-900 text-white rounded-lg font-bold text-xs"
+                              >
+                                Baca & Nilai
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 13. Teacher Detail & Grading View
+        const TeacherDetailView = () => {
+          if (!selectedNewsForDetail) return null;
+
+          const news = selectedNewsForDetail;
+
+          // Evaluation Indicators (1-4 scale)
+          const [scores, setScores] = useState(news.assessment?.scores || {
+            facts: 4,
+            elements: 4,
+            structure: 4,
+            grammar: 4,
+            editing: 4
+          });
+
+          const [feedback, setFeedback] = useState(news.assessment?.feedback || '');
+
+          // Calculate final score out of 100
+          const finalScore = useMemo(() => {
+            const sum = scores.facts + scores.elements + scores.structure + scores.grammar + scores.editing;
+            // Max score sum is 20, (sum / 20) * 100
+            return Math.round((sum / 20) * 100);
+          }, [scores]);
+
+          const saveGrading = () => {
+            handleSaveAssessment(news.id, {
+              scores,
+              finalScore,
+              feedback,
+              gradedAt: new Date().toISOString()
+            });
+            setCurrentView('teacher_dashboard');
+          };
+
+          return (
+            <div className="max-w-5xl mx-auto px-4 py-8">
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => setCurrentView('teacher_dashboard')}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-2"
+                >
+                  <i data-lucide="arrow-left" className="w-4 h-4"></i>
+                  <span>Kembali ke Dashboard Guru</span>
+                </button>
+                <span className="text-xs text-slate-500 font-bold">
+                  Karya Siswa: {news.studentName} ({news.studentClass})
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left 2 Cols: News Reading */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 newspaper-box font-newspaper">
+                    <span className="text-xs font-bold text-brand-800 uppercase tracking-wider block mb-1">
+                      Kategori: {news.category}
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">{news.title}</h1>
+                    <p className="text-xs text-slate-500 mb-6 font-sans">
+                      Diterbitkan pada: {new Date(news.publishedAt).toLocaleString('id-ID')}
+                    </p>
+
+                    <div className="space-y-4 text-base leading-relaxed text-slate-900">
+                      <p className="font-semibold">{news.lead}</p>
+                      <p>{news.body}</p>
+                      <p>{news.ending}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right 1 Col: Grading Form */}
+                <div className="bg-white p-6 rounded-3xl shadow-xl border border-blue-100 space-y-6">
+                  <div className="pb-4 border-b border-slate-100">
+                    <h3 className="font-extrabold text-xl text-brand-900">Form Penilaian Guru</h3>
+                    <p className="text-xs text-slate-500">Skala Nilai 1 - 4 per Indikator</p>
+                  </div>
+
+                  <div className="space-y-4 text-xs font-bold">
+                    {/* Indikator 1 */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">1. Ketepatan & Kelengkapan Fakta</label>
+                      <select
+                        value={scores.facts}
+                        onChange={e => setScores({ ...scores, facts: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value={4}>4 - Sangat Tepat & Akurat</option>
+                        <option value={3}>3 - Tepat</option>
+                        <option value={2}>2 - Cukup Fakta</option>
+                        <option value={1}>1 - Kurang Fakta</option>
+                      </select>
+                    </div>
+
+                    {/* Indikator 2 */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">2. Kelengkapan Unsur 5W + 1H</label>
+                      <select
+                        value={scores.elements}
+                        onChange={e => setScores({ ...scores, elements: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value={4}>4 - Lengkap 6 Unsur</option>
+                        <option value={3}>3 - Cukup Lengkap</option>
+                        <option value={2}>2 - Sebagian Unsur</option>
+                        <option value={1}>1 - Sangat Kurang</option>
+                      </select>
+                    </div>
+
+                    {/* Indikator 3 */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">3. Struktur Berita (Piramida Terbalik)</label>
+                      <select
+                        value={scores.structure}
+                        onChange={e => setScores({ ...scores, structure: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value={4}>4 - Struktur Rapi & Padu</option>
+                        <option value={3}>3 - Cukup Rapi</option>
+                        <option value={2}>2 - Kurang Padu</option>
+                        <option value={1}>1 - Tidak Terstruktur</option>
+                      </select>
+                    </div>
+
+                    {/* Indikator 4 */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">4. Kaidah Kebahasaan (EYD & Verba)</label>
+                      <select
+                        value={scores.grammar}
+                        onChange={e => setScores({ ...scores, grammar: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value={4}>4 - Sangat Sesuai EYD</option>
+                        <option value={3}>3 - Cukup Sesuai</option>
+                        <option value={2}>2 - Banyak Tipografi</option>
+                        <option value={1}>1 - Tidak Sesuai</option>
+                      </select>
+                    </div>
+
+                    {/* Indikator 5 */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">5. Penyuntingan & Keterbacaan</label>
+                      <select
+                        value={scores.editing}
+                        onChange={e => setScores({ ...scores, editing: Number(e.target.value) })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+                      >
+                        <option value={4}>4 - Sangat Nyaman Dibaca</option>
+                        <option value={3}>3 - Baik</option>
+                        <option value={2}>2 - Sedang</option>
+                        <option value={1}>1 - Perlu Perbaikan</option>
+                      </select>
+                    </div>
+
+                    {/* Final Calculated Score */}
+                    <div className="p-4 bg-yellow-100 rounded-2xl border border-yellow-300 text-center">
+                      <span className="text-xs font-black text-yellow-900 uppercase block">Kalkulasi Nilai Akhir (Skala 100)</span>
+                      <span className="text-3xl font-black text-brand-900">{finalScore} / 100</span>
+                    </div>
+
+                    {/* Feedback Column */}
+                    <div>
+                      <label className="block text-slate-700 mb-1">Catatan & Umpan Balik Guru Shabrina</label>
+                      <textarea
+                        rows="3"
+                        value={feedback}
+                        onChange={e => setFeedback(e.target.value)}
+                        placeholder="Tuliskan umpan balik apresiasi & motivasi untuk siswa..."
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={saveGrading}
+                    className="w-full py-3 bg-brand-800 hover:bg-brand-900 text-white font-bold rounded-xl text-xs shadow-md transition-all"
+                  >
+                    Simpan Penilaian Siswa
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // Render main active view based on routing state
+        return (
+          <div className="min-h-screen flex flex-col justify-between">
+            {/* Toast Notification Popup */}
+            {toastMessage && (
+              <div className={`fixed bottom-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-2 transition-all ${
+                toastMessage.type === 'error' ? 'bg-red-600 text-white' : 'bg-slate-900 text-white'
+              }`}>
+                <span>{toastMessage.msg}</span>
+              </div>
+            )}
+
+            {!serverAuthenticated ? (
+              <ServerAccessView />
+            ) : (
+              <>
+                <Header />
+                <main className="flex-grow">
+                  {currentView === 'auth' && <AuthView />}
+                  {currentView === 'avatar_select' && <AvatarSelectView />}
+                  {currentView === 'student_dashboard' && <StudentDashboardView />}
+                  {currentView === 'form_bahan' && <FormBahanView />}
+                  {currentView === 'misi1_materi' && <Misi1MateriView />}
+                  {currentView === 'misi1_work' && <Misi1WorkView />}
+                  {currentView === 'misi2_materi' && <Misi2MateriView />}
+                  {currentView === 'misi2_work' && <Misi2WorkView />}
+                  {currentView === 'misi3_materi' && <Misi3MateriView />}
+                  {currentView === 'misi3_work' && <Misi3WorkView />}
+                  {currentView === 'misi4_materi' && <Misi4MateriView />}
+                  {currentView === 'misi4_work' && <Misi4WorkView />}
+                  {currentView === 'preview_publish' && <PreviewPublishView />}
+                  {currentView === 'gallery' && <GalleryView />}
+                  {currentView === 'teacher_dashboard' && <TeacherDashboardView />}
+                  {currentView === 'teacher_detail' && <TeacherDetailView />}
+                </main>
+                
+                <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 font-medium">
+                  Rancang Berita © 2026 • Platform Interaktif Pembelajaran Menulis Berita SMA • Guru: Shabrina Luh Nayank Sakti, S.S.
+                </footer>
+              </>
+            )}
+          </div>
+        );
+      }
+
+      // Initialize React Root
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+</body>
+</html>
