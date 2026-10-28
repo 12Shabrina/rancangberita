@@ -1,1 +1,2037 @@
-index.html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rancang Berita — Platform Pembelajaran Menulis Berita Interaktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Inter / Sans-serif setup) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Times+New+Roman&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        accent: {
+                            yellow: '#fbbf24',
+                            amber: '#f59e0b',
+                            coral: '#f87171',
+                            emerald: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Calibri', 'Plus Jakarta Sans', 'sans-serif'],
+                        formal: ['Times New Roman', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styles & Cute Animations */
+        body {
+            font-family: 'Calibri', 'Plus Jakarta Sans', sans-serif;
+            background-color: #f0f7ff;
+            color: #1e293b;
+        }
+
+        .bg-school-pattern {
+            background-color: #eef6ff;
+            background-image: radial-gradient(#3b82f6 0.75px, transparent 0.75px), radial-gradient(#3b82f6 0.75px, #eef6ff 0.75px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            background-opacity: 0.15;
+        }
+
+        .bouncy {
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .pulse-subtle {
+            animation: pulse-slow 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.95; transform: scale(1.02); }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #93c5fd;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-school-pattern flex flex-col justify-between antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP GLOBAL NAVIGATION BAR -->
+    <header id="mainNav" class="bg-white/90 backdrop-blur-md border-b-2 border-brand-100 sticky top-0 z-40 shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.navigateTo('home')">
+                <div class="bg-gradient-to-tr from-brand-600 to-brand-400 text-white p-2.5 rounded-2xl shadow-md transform hover:rotate-6 transition-transform">
+                    <i class="fa-solid fa-[# newspaper text-xl]"></i>
+                    <svg class="w-6 h-6 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-brand-900 tracking-tight leading-none">Rancang Berita</h1>
+                    <span class="text-xs font-bold text-accent-amber tracking-wider uppercase">Jurnalistik SMA XI</span>
+                </div>
+            </div>
+
+            <!-- Active User Info & Controls -->
+            <div id="navUserArea" class="hidden flex items-center space-x-3">
+                <div class="flex items-center space-x-2 bg-brand-50 px-3 py-1.5 rounded-xl border border-brand-200">
+                    <div id="navAvatar" class="w-8 h-8 rounded-full bg-brand-200 flex items-center justify-center overflow-hidden border border-brand-400">
+                        <!-- SVG Avatar rendered dynamically -->
+                    </div>
+                    <div class="text-left hidden sm:block">
+                        <p id="navUserName" class="text-xs font-bold text-brand-900 leading-tight">Nama Siswa</p>
+                        <p id="navUserSub" class="text-[10px] text-brand-600 font-semibold leading-tight">Kelas XI-1</p>
+                    </div>
+                </div>
+                <button onclick="app.showGallery()" class="p-2 text-brand-700 hover:bg-brand-100 rounded-xl transition" title="Galeri Karya">
+                    <i class="fa-solid fa-newspaper text-lg"></i>
+                </button>
+                <button onclick="app.logout()" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition" title="Keluar">
+                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="appContainer" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Dynamic views will render here -->
+    </main>
+
+    <!-- NOTIFICATION TOAST CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- CONFIRMATION / ALERT MODAL -->
+    <div id="modalOverlay" class="fixed inset-0 bg-brand-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-brand-200 transform transition-all scale-100 text-center">
+            <div id="modalIcon" class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-2xl">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <h3 id="modalTitle" class="text-xl font-extrabold text-brand-900 mb-2">Konfirmasi</h3>
+            <p id="modalBody" class="text-sm text-gray-600 mb-6">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+            <div class="flex space-x-3 justify-center">
+                <button id="modalBtnCancel" onclick="app.closeModal()" class="px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:bg-gray-100 transition">Batal</button>
+                <button id="modalBtnConfirm" class="px-5 py-2.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 shadow-md transition">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL FOOTER -->
+    <footer class="bg-white border-t border-brand-100 py-6 mt-12 text-center text-xs text-brand-700 font-medium">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+                <span class="font-extrabold text-brand-900">Rancang Berita</span>
+                <span>&bull;</span>
+                <span>Guru Pembimbing: <b>Shabrina Luh Nayank Sakti, S.S.</b></span>
+            </div>
+            <p>&copy; 2026 Platform Pembelajaran Bahasa Indonesia SMA XI. Media Pembelajaran Interaktif.</p>
+        </div>
+    </footer>
+
+    <!-- MAIN APP SCRIPT -->
+    <script>
+        /**
+         * RANCANG BERITA - Core Full-Stack Browser Application
+         * Handles local persistence, state management, UI rendering, multi-user simulation & evaluation rubrics.
+         */
+
+        // Initial Server Configuration
+        const SERVER_PASSWORD_DEFAULT = "12345678";
+        const TEACHER_PASSWORD_DEFAULT = "1234";
+        const TEACHER_NAME = "Shabrina Luh Nayank Sakti, S.S.";
+        const APP_STORAGE_KEY = "RANCANG_BERITA_DB_V1";
+        const SESSION_KEY = "RANCANG_BERITA_SESSION";
+
+        // Predefined Classes
+        const CLASS_OPTIONS = [
+            "XI-1", "XI-2", "XI-3", "XI-4", "XI-5", "XI-6",
+            "XI-7", "XI-8", "XI-9", "XI-10", "XI-11", "XI-12"
+        ];
+
+        // Database Schema & State Controller
+        class StorageManager {
+            static getDb() {
+                const data = localStorage.getItem(APP_STORAGE_KEY);
+                if (!data) {
+                    const initialDb = {
+                        serverPassword: SERVER_PASSWORD_DEFAULT,
+                        teacherPassword: TEACHER_PASSWORD_DEFAULT,
+                        students: [], // { id, name, class, absno, password, avatar }
+                        publishedNews: [], // { id, studentId, title, lead, body, ending, category, date, class, authorName, evaluation }
+                        drafts: {}, // studentId -> { newsMaterials, mission1, mission2, mission3, mission4, currentMission }
+                    };
+                    localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(initialDb));
+                    return initialDb;
+                }
+                return JSON.parse(data);
+            }
+
+            static saveDb(db) {
+                localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(db));
+            }
+
+            static exportJSON() {
+                const db = this.getDb();
+                const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `RancangBerita_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+            }
+
+            static importJSON(file, callback) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (importedData.students && importedData.publishedNews) {
+                            localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(importedData));
+                            callback(true, "Data server berhasil diimpor!");
+                        } else {
+                            callback(false, "Format data tidak valid.");
+                        }
+                    } catch (err) {
+                        callback(false, "Gagal membaca berkas JSON.");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // SVG Avatar Generators for Cute Highschool UI
+        const Avatars = {
+            male: `<svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="50" fill="#DBEAFE"/>
+                <path d="M50 20C38 20 30 28 30 40V48C30 50 32 52 35 52H65C68 52 70 50 70 48V40C70 28 62 20 50 20Z" fill="#1E3A8A"/>
+                <circle cx="50" cy="46" r="22" fill="#FDE047"/>
+                <circle cx="50" cy="48" r="18" fill="#FFEDD5"/>
+                <!-- Hair -->
+                <path d="M32 38C32 28 40 22 50 22C60 22 68 28 68 38C68 40 65 35 50 35C35 35 32 40 32 38Z" fill="#1E293B"/>
+                <!-- Eyes & Smile -->
+                <circle cx="43" cy="46" r="2.5" fill="#0F172A"/>
+                <circle cx="57" cy="46" r="2.5" fill="#0F172A"/>
+                <path d="M45 54C45 54 48 57 50 57C52 57 55 54 55 54" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+                <!-- Uniform Grey Collar & Blue Tie -->
+                <path d="M30 75L50 62L70 75V100H30V75Z" fill="#FFFFFF"/>
+                <path d="M46 62L50 82L54 62H46Z" fill="#2563EB"/>
+                <path d="M25 80C25 70 35 68 50 68C65 68 75 70 75 80V100H25V80Z" fill="#E2E8F0" opacity="0.4"/>
+            </svg>`,
+
+            female: `<svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="50" fill="#FCE7F3"/>
+                <circle cx="50" cy="48" r="18" fill="#FFEDD5"/>
+                <!-- Hair Long Cute -->
+                <path d="M28 42C28 26 36 20 50 20C64 20 72 26 72 42C72 58 68 65 68 65H32C32 65 28 58 28 42Z" fill="#334155"/>
+                <circle cx="50" cy="46" r="17" fill="#FFEDD5"/>
+                <!-- Bangs -->
+                <path d="M33 38C38 32 45 35 50 35C55 35 62 32 67 38C65 30 58 24 50 24C42 24 35 30 33 38Z" fill="#1E293B"/>
+                <!-- Eyes & Blush -->
+                <circle cx="43" cy="45" r="2.5" fill="#0F172A"/>
+                <circle cx="57" cy="45" r="2.5" fill="#0F172A"/>
+                <ellipse cx="39" cy="49" rx="3" ry="1.5" fill="#F472B6"/>
+                <ellipse cx="61" cy="49" rx="3" ry="1.5" fill="#F472B6"/>
+                <path d="M46 52C46 52 48 55 50 55C52 55 54 52 54 52" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+                <!-- School Girl Uniform & Ribbon -->
+                <path d="M28 78L50 65L72 78V100H28V78Z" fill="#FFFFFF"/>
+                <path d="M47 66L50 72L53 66L50 64L47 66Z" fill="#DC2626"/>
+                <path d="M45 68L38 72L44 74L45 68Z" fill="#DC2626"/>
+                <path d="M55 68L62 72L56 74L55 68Z" fill="#DC2626"/>
+            </svg>`
+        };
+
+        // Application Main Engine
+        class App {
+            constructor() {
+                this.db = StorageManager.getDb();
+                this.session = JSON.parse(sessionStorage.getItem(SESSION_KEY)) || null; // { authenticated: true/false, user: {...}, isTeacher: bool }
+                this.currentFont = 'font-sans';
+            }
+
+            init() {
+                this.renderNav();
+                if (!this.session || !this.session.authenticated) {
+                    this.renderServerGate();
+                } else if (this.session.isTeacher) {
+                    this.renderTeacherDashboard();
+                } else {
+                    this.renderStudentDashboard();
+                }
+            }
+
+            saveSession(sessionData) {
+                this.session = sessionData;
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+                this.renderNav();
+            }
+
+            logout() {
+                this.confirmModal("Apakah Anda yakin ingin keluar?", () => {
+                    this.session = null;
+                    sessionStorage.removeItem(SESSION_KEY);
+                    this.renderNav();
+                    this.showToast("Berhasil keluar dari sesi.", "info");
+                    this.renderServerGate();
+                });
+            }
+
+            showToast(msg, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                const colors = {
+                    success: 'bg-emerald-500 text-white',
+                    error: 'bg-red-500 text-white',
+                    info: 'bg-brand-600 text-white',
+                    warning: 'bg-amber-500 text-white'
+                };
+                const icons = {
+                    success: 'fa-circle-check',
+                    error: 'fa-triangle-exclamation',
+                    info: 'fa-circle-info',
+                    warning: 'fa-triangle-exclamation'
+                };
+                toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-2xl shadow-xl ${colors[type] || colors.info} transform transition-all duration-300 translate-y-2 text-sm font-bold`;
+                toast.innerHTML = `<i class="fa-solid ${icons[type]} text-lg"></i><span>${msg}</span>`;
+                container.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-y-2'), 10);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-4');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            }
+
+            confirmModal(bodyText, onConfirm, title = "Konfirmasi") {
+                const modal = document.getElementById('modalOverlay');
+                document.getElementById('modalTitle').innerText = title;
+                document.getElementById('modalBody').innerText = bodyText;
+                const confirmBtn = document.getElementById('modalBtnConfirm');
+
+                // Clone button to strip existing listeners
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+                newConfirmBtn.addEventListener('click', () => {
+                    this.closeModal();
+                    onConfirm();
+                });
+                modal.classList.remove('hidden');
+            }
+
+            closeModal() {
+                document.getElementById('modalOverlay').classList.add('hidden');
+            }
+
+            renderNav() {
+                const navUser = document.getElementById('navUserArea');
+                if (this.session && this.session.user) {
+                    navUser.classList.remove('hidden');
+                    document.getElementById('navUserName').innerText = this.session.user.name;
+                    document.getElementById('navUserSub').innerText = this.session.isTeacher ? 'Guru Pengampu' : `Kelas ${this.session.user.class} (Absen ${this.session.user.absno})`;
+                    document.getElementById('navAvatar').innerHTML = this.session.isTeacher ? 
+                        `<div class="w-full h-full bg-brand-700 text-white flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user-tie"></i></div>` :
+                        Avatars[this.session.user.avatar || 'male'];
+                } else {
+                    navUser.classList.add('hidden');
+                }
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN 1 — BERANDA & SERVER ACCESS GATE
+            // ----------------------------------------------------
+            renderServerGate() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-xl mx-auto my-8 bg-white rounded-3xl p-8 shadow-xl border-4 border-brand-100 text-center">
+                        <div class="inline-block p-4 bg-brand-50 rounded-3xl mb-4 shadow-inner bouncy">
+                            <div class="w-20 h-20 bg-gradient-to-tr from-brand-600 to-brand-400 text-white rounded-2xl flex items-center justify-center text-4xl shadow-md">
+                                <i class="fa-solid fa-newspaper"></i>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-black text-brand-900 tracking-tight mb-2">Rancang Berita</h2>
+                        <p class="text-sm font-bold text-accent-amber mb-4">"Rancang Faktanya, Susun Beritanya, Publikasikan Karyanya!"</p>
+                        <p class="text-xs text-gray-600 mb-8 leading-relaxed max-w-md mx-auto">
+                            Platform pembelajaran jurnalistik interaktif kelas XI SMA. Bimbingan langkah-demi-langkah menulis berita akurat, faktual, dan sistematis.
+                        </p>
+
+                        <!-- Server Access Form -->
+                        <form id="serverAuthForm" onsubmit="app.handleServerAuth(event)" class="bg-brand-50/70 p-6 rounded-2xl border-2 border-brand-100 text-left space-y-4">
+                            <div>
+                                <label class="block text-xs font-extrabold text-brand-900 uppercase tracking-wider mb-2">Masukkan Password Akses Server</label>
+                                <div class="relative">
+                                    <input type="password" id="serverPasswordInput" required placeholder="Password server..." 
+                                        class="w-full px-4 py-3 rounded-xl border-2 border-brand-200 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 outline-none text-sm font-bold text-gray-800 transition">
+                                    <button type="button" onclick="app.togglePasswordVisibility('serverPasswordInput', 'passToggleIcon')" 
+                                        class="absolute right-3 top-3.5 text-brand-500 hover:text-brand-700">
+                                        <i id="passToggleIcon" class="fa-solid fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1.5"><i class="fa-solid fa-lock text-brand-500 mr-1"></i>Default Password Server: <code class="bg-brand-200 px-1.5 py-0.5 rounded text-brand-900 font-mono">12345678</code></p>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold rounded-xl shadow-lg shadow-brand-500/30 transform hover:-translate-y-0.5 transition active:translate-y-0 flex items-center justify-center space-x-2">
+                                <span>Masuk ke Rancang Berita</span>
+                                <i class="fa-solid fa-arrow-right text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            togglePasswordVisibility(inputId, iconId) {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'fa-solid fa-eye-slash text-sm';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'fa-solid fa-eye text-sm';
+                }
+            }
+
+            handleServerAuth(e) {
+                e.preventDefault();
+                const inputPass = document.getElementById('serverPasswordInput').value.trim();
+                const db = StorageManager.getDb();
+
+                if (inputPass === db.serverPassword) {
+                    this.showToast("Password server benar!", "success");
+                    this.renderAuthChoice();
+                } else {
+                    this.showToast("Password server salah! Silakan coba lagi.", "error");
+                }
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN 2 — DAFTAR / MASUK SISWA & LOGIN GURU
+            // ----------------------------------------------------
+            renderAuthChoice() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto my-6 bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100">
+                        <!-- Navigation Tabs -->
+                        <div class="flex border-b-2 border-brand-100 mb-6 font-bold text-sm">
+                            <button id="tabBtnStudentLogin" onclick="app.switchAuthTab('studentLogin')" class="flex-1 py-3 text-center border-b-4 border-brand-600 text-brand-900">Masuk Siswa</button>
+                            <button id="tabBtnStudentReg" onclick="app.switchAuthTab('studentReg')" class="flex-1 py-3 text-center border-b-4 border-transparent text-gray-400 hover:text-brand-600">Daftar Akun Siswa</button>
+                            <button id="tabBtnTeacher" onclick="app.switchAuthTab('teacherLogin')" class="flex-1 py-3 text-center border-b-4 border-transparent text-amber-500 hover:text-amber-600"><i class="fa-solid fa-user-tie mr-1"></i>Portal Guru</button>
+                        </div>
+
+                        <!-- STUDENT LOGIN FORM -->
+                        <div id="formStudentLogin" class="space-y-4">
+                            <h3 class="text-xl font-extrabold text-brand-900 mb-1">Selamat Datang Kembali!</h3>
+                            <p class="text-xs text-gray-500 mb-4">Masukkan nama dan password untuk melanjutkan penulisan berita.</p>
+                            <form onsubmit="app.handleStudentLogin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Nama Lengkap Siswa</label>
+                                    <input type="text" id="loginStudentName" required placeholder="Contoh: Budi Santoso" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Password</label>
+                                    <input type="password" id="loginStudentPass" required placeholder="Password Anda..." class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-brand-600 text-white font-extrabold rounded-xl hover:bg-brand-700 shadow-md transition">Masuk Ke Dashboard</button>
+                            </form>
+                        </div>
+
+                        <!-- STUDENT REGISTER FORM -->
+                        <div id="formStudentReg" class="hidden space-y-4">
+                            <h3 class="text-xl font-extrabold text-brand-900 mb-1">Pendaftaran Akun Baru Siswa</h3>
+                            <p class="text-xs text-gray-500 mb-4">Isi data diri dengan lengkap sesuai presensi kelas.</p>
+                            <form onsubmit="app.handleStudentReg(event)" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Nama Lengkap</label>
+                                        <input type="text" id="regName" required placeholder="Nama lengkap..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Nomor Absen</label>
+                                        <input type="number" id="regAbsno" min="1" max="50" required placeholder="Contoh: 14" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Pilihan Kelas XI</label>
+                                    <select id="regClass" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold bg-white">
+                                        ${CLASS_OPTIONS.map(c => `<option value="${c}">Kelas ${c}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Password</label>
+                                        <input type="password" id="regPass" required placeholder="Minimal 4 karakter" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Konfirmasi Password</label>
+                                        <input type="password" id="regPassConfirm" required placeholder="Ulangi password" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-brand-600 text-white font-extrabold rounded-xl hover:bg-brand-700 shadow-md transition">Lanjut Pilih Avatar</button>
+                            </form>
+                        </div>
+
+                        <!-- TEACHER LOGIN FORM -->
+                        <div id="formTeacherLogin" class="hidden space-y-4">
+                            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 flex items-center space-x-3 mb-4">
+                                <i class="fa-solid fa-chalkboard-user text-amber-600 text-2xl"></i>
+                                <div>
+                                    <h4 class="text-xs font-bold text-amber-900 uppercase">Guru Pengampu</h4>
+                                    <p class="text-sm font-black text-amber-800">${TEACHER_NAME}</p>
+                                </div>
+                            </div>
+                            <form onsubmit="app.handleTeacherLogin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-amber-900 uppercase mb-1">Password Guru</label>
+                                    <div class="relative">
+                                        <input type="password" id="teacherPassInput" required placeholder="Masukkan password guru..." class="w-full px-4 py-3 rounded-xl border-2 border-amber-200 focus:border-amber-600 outline-none text-sm font-semibold">
+                                        <button type="button" onclick="app.togglePasswordVisibility('teacherPassInput', 'teacherPassToggleIcon')" class="absolute right-3 top-3.5 text-amber-600">
+                                            <i id="teacherPassToggleIcon" class="fa-solid fa-eye text-sm"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 mt-1"><i class="fa-solid fa-key text-amber-500 mr-1"></i>Default Password Guru: <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">1234</code></p>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-md transition">Masuk Halaman Guru</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            }
+
+            switchAuthTab(tab) {
+                const tabs = {
+                    studentLogin: { btn: 'tabBtnStudentLogin', form: 'formStudentLogin' },
+                    studentReg: { btn: 'tabBtnStudentReg', form: 'formStudentReg' },
+                    teacherLogin: { btn: 'tabBtnTeacher', form: 'formTeacherLogin' }
+                };
+
+                Object.keys(tabs).forEach(k => {
+                    const b = document.getElementById(tabs[k].btn);
+                    const f = document.getElementById(tabs[k].form);
+                    if (k === tab) {
+                        b.className = k === 'teacherLogin' ? 
+                            "flex-1 py-3 text-center border-b-4 border-amber-500 text-amber-900 font-extrabold" : 
+                            "flex-1 py-3 text-center border-b-4 border-brand-600 text-brand-900 font-extrabold";
+                        f.classList.remove('hidden');
+                    } else {
+                        b.className = "flex-1 py-3 text-center border-b-4 border-transparent text-gray-400 font-bold hover:text-brand-600";
+                        f.classList.add('hidden');
+                    }
+                });
+            }
+
+            handleStudentReg(e) {
+                e.preventDefault();
+                const name = document.getElementById('regName').value.trim();
+                const absno = document.getElementById('regAbsno').value.trim();
+                const cls = document.getElementById('regClass').value;
+                const pass = document.getElementById('regPass').value;
+                const passConfirm = document.getElementById('regPassConfirm').value;
+
+                if (pass !== passConfirm) {
+                    this.showToast("Konfirmasi password tidak cocok!", "error");
+                    return;
+                }
+
+                const db = StorageManager.getDb();
+                // Check duplicate
+                const exists = db.students.some(s => s.name.toLowerCase() === name.toLowerCase() && s.class === cls);
+                if (exists) {
+                    this.showToast(`Siswa bernama ${name} di kelas ${cls} sudah terdaftar!`, "error");
+                    return;
+                }
+
+                const newStudent = {
+                    id: 'STD_' + Date.now(),
+                    name,
+                    absno,
+                    class: cls,
+                    password: pass,
+                    avatar: 'male'
+                };
+
+                this.tempStudentData = newStudent;
+                this.renderAvatarSelection();
+            }
+
+            renderAvatarSelection() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-xl mx-auto my-6 bg-white rounded-3xl p-8 shadow-xl border-4 border-brand-100 text-center">
+                        <h3 class="text-2xl font-black text-brand-900 mb-1">Pilih Avatar Siswa</h3>
+                        <p class="text-xs text-gray-500 mb-6">Pilih avatar yang merepresentasikan dirimu di Rancang Berita.</p>
+
+                        <div class="grid grid-cols-2 gap-6 mb-8">
+                            <div id="avatarCardMale" onclick="app.selectAvatarChoice('male')" class="cursor-pointer p-4 rounded-2xl border-4 border-brand-600 bg-brand-50 shadow-md hover:scale-105 transition transform">
+                                <div class="w-24 h-24 mx-auto mb-2">${Avatars.male}</div>
+                                <span class="text-xs font-black text-brand-900 uppercase">Siswa Laki-Laki</span>
+                            </div>
+                            <div id="avatarCardFemale" onclick="app.selectAvatarChoice('female')" class="cursor-pointer p-4 rounded-2xl border-4 border-gray-200 hover:border-brand-300 bg-white shadow-sm hover:scale-105 transition transform">
+                                <div class="w-24 h-24 mx-auto mb-2">${Avatars.female}</div>
+                                <span class="text-xs font-black text-brand-900 uppercase">Siswa Perempuan</span>
+                            </div>
+                        </div>
+
+                        <button onclick="app.completeRegistration()" class="w-full py-3.5 bg-brand-600 text-white font-extrabold rounded-xl shadow-lg hover:bg-brand-700 transition">Simpan Avatar & Selesaikan Pendaftaran</button>
+                    </div>
+                `;
+            }
+
+            selectAvatarChoice(choice) {
+                this.tempStudentData.avatar = choice;
+                const maleCard = document.getElementById('avatarCardMale');
+                const femaleCard = document.getElementById('avatarCardFemale');
+                if (choice === 'male') {
+                    maleCard.className = "cursor-pointer p-4 rounded-2xl border-4 border-brand-600 bg-brand-50 shadow-md scale-105 transition transform";
+                    femaleCard.className = "cursor-pointer p-4 rounded-2xl border-4 border-gray-200 bg-white shadow-sm hover:border-brand-300 transition transform";
+                } else {
+                    femaleCard.className = "cursor-pointer p-4 rounded-2xl border-4 border-brand-600 bg-brand-50 shadow-md scale-105 transition transform";
+                    maleCard.className = "cursor-pointer p-4 rounded-2xl border-4 border-gray-200 bg-white shadow-sm hover:border-brand-300 transition transform";
+                }
+            }
+
+            completeRegistration() {
+                const db = StorageManager.getDb();
+                db.students.push(this.tempStudentData);
+
+                // Initialize empty draft structure for new student
+                db.drafts[this.tempStudentData.id] = {
+                    newsMaterials: null,
+                    mission1: null,
+                    mission2: null,
+                    mission3: null,
+                    mission4: null,
+                    completedMissions: [],
+                };
+
+                StorageManager.saveDb(db);
+                this.saveSession({ authenticated: true, user: this.tempStudentData, isTeacher: false });
+                this.showToast("Pendaftaran berhasil! Selamat datang.", "success");
+                this.renderStudentDashboard();
+            }
+
+            handleStudentLogin(e) {
+                e.preventDefault();
+                const name = document.getElementById('loginStudentName').value.trim();
+                const pass = document.getElementById('loginStudentPass').value.trim();
+                const db = StorageManager.getDb();
+
+                const student = db.students.find(s => s.name.toLowerCase() === name.toLowerCase() && s.password === pass);
+                if (student) {
+                    this.saveSession({ authenticated: true, user: student, isTeacher: false });
+                    this.showToast(`Selamat datang kembali, ${student.name}!`, "success");
+                    this.renderStudentDashboard();
+                } else {
+                    this.showToast("Nama atau password siswa salah!", "error");
+                }
+            }
+
+            handleTeacherLogin(e) {
+                e.preventDefault();
+                const pass = document.getElementById('teacherPassInput').value.trim();
+                const db = StorageManager.getDb();
+
+                if (pass === db.teacherPassword) {
+                    const teacherUser = { name: TEACHER_NAME, class: 'Semua Kelas', absno: 'GURU' };
+                    this.saveSession({ authenticated: true, user: teacherUser, isTeacher: true });
+                    this.showToast("Berhasil login sebagai Guru!", "success");
+                    this.renderTeacherDashboard();
+                } else {
+                    this.showToast("Password Guru salah!", "error");
+                }
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN 3 — DASHBOARD SISWA & PETA MISI
+            // ----------------------------------------------------
+            renderStudentDashboard() {
+                const db = StorageManager.getDb();
+                const student = this.session.user;
+                const draft = db.drafts[student.id] || { completedMissions: [] };
+                const completed = draft.completedMissions || [];
+
+                const hasMaterials = !!draft.newsMaterials;
+                const m1Unlocked = hasMaterials;
+                const m2Unlocked = completed.includes(1);
+                const m3Unlocked = completed.includes(2);
+                const m4Unlocked = completed.includes(3);
+                const canPublish = completed.includes(4);
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Student Profile Banner -->
+                        <div class="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="flex items-center space-x-4 z-10">
+                                <div class="w-20 h-20 rounded-2xl bg-white/20 p-1 border-2 border-white/40 shadow-inner flex-shrink-0">
+                                    ${Avatars[student.avatar || 'male']}
+                                </div>
+                                <div>
+                                    <div class="inline-block px-3 py-1 bg-yellow-400 text-brand-950 font-black text-xs rounded-full uppercase mb-1 shadow">
+                                        Siswa Jurnalis
+                                    </div>
+                                    <h2 class="text-2xl font-black">${student.name}</h2>
+                                    <p class="text-xs font-semibold text-brand-100">Kelas ${student.class} &bull; Absen No. ${student.absno}</p>
+                                </div>
+                            </div>
+
+                            <!-- Progress Summary Pill -->
+                            <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 z-10 w-full md:w-auto text-center md:text-right">
+                                <span class="text-xs font-bold text-brand-100 uppercase tracking-wider">Progres Menulis Berita</span>
+                                <div class="text-2xl font-black text-yellow-300 mt-0.5">${completed.length} / 4 Misi Selesai</div>
+                                <div class="w-full bg-brand-900/40 h-2.5 rounded-full mt-2 overflow-hidden border border-white/20">
+                                    <div class="bg-yellow-400 h-full rounded-full transition-all duration-500" style="width: ${(completed.length/4)*100}%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reset / Create New Article Banner if published previously -->
+                        <div class="bg-white p-4 rounded-2xl border-2 border-brand-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3 text-sm font-semibold text-brand-900">
+                                <i class="fa-solid fa-circle-info text-brand-600 text-xl"></i>
+                                <span>Ingin menulis artikel berita topik baru? Publikasi sebelumnya tidak akan hilang.</span>
+                            </div>
+                            <button onclick="app.resetDraftForNewArticle()" class="px-4 py-2 bg-accent-amber hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>Tulis Berita Baru (Reset Draf)</span>
+                            </button>
+                        </div>
+
+                        <!-- Interactive Mission Map -->
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100">
+                            <div class="text-center max-w-lg mx-auto mb-8">
+                                <h3 class="text-2xl font-black text-brand-900">Peta Misi Jurnalistik</h3>
+                                <p class="text-xs text-gray-500 mt-1">Selesaikan 4 tahapan di bawah ini secara berurutan untuk mempublikasikan berita karya mandirimu.</p>
+                            </div>
+
+                            <!-- Initial Step: Materials Form -->
+                            <div class="mb-8 p-4 bg-brand-50 border-2 border-brand-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-xl shadow">
+                                        <i class="fa-solid fa-file-pen"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-extrabold text-brand-900 text-sm">Langkah Awal: Formulir Bahan Berita</h4>
+                                        <p class="text-xs text-gray-500">${hasMaterials ? 'Bahan berita telah tersimpan.' : 'Tentukan topik & peristiwa awal sebelum memulai Misi 1.'}</p>
+                                    </div>
+                                </div>
+                                <button onclick="app.renderMaterialsForm()" class="px-5 py-2.5 ${hasMaterials ? 'bg-brand-100 text-brand-800 hover:bg-brand-200' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-md'} font-extrabold text-xs rounded-xl transition">
+                                    ${hasMaterials ? 'Edit Bahan Berita' : 'Isi Bahan Berita'}
+                                </button>
+                            </div>
+
+                            <!-- 4 Mission Cards Path -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- Mission 1 -->
+                                <div class="relative p-5 rounded-2xl border-2 ${completed.includes(1) ? 'border-emerald-500 bg-emerald-50/50' : m1Unlocked ? 'border-brand-500 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'} transition">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${completed.includes(1) ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-900'}">Misi 1</span>
+                                        <i class="fa-solid ${completed.includes(1) ? 'fa-circle-check text-emerald-500' : m1Unlocked ? 'fa-magnifying-glass text-brand-600' : 'fa-lock text-gray-400'} text-xl"></i>
+                                    </div>
+                                    <h4 class="font-extrabold text-brand-900 text-base mb-1">Identifikasi Fakta</h4>
+                                    <p class="text-xs text-gray-500 mb-4 h-12">Temukan fakta & bedakan fakta objektif dari opini narasumber.</p>
+                                    <button onclick="app.startMission(1)" ${!m1Unlocked ? 'disabled' : ''} class="w-full py-2.5 rounded-xl font-extrabold text-xs ${completed.includes(1) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : m1Unlocked ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-md' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} transition">
+                                        ${completed.includes(1) ? 'Revisi Misi 1' : m1Unlocked ? 'Mulai Misi 1' : 'Terkunci'}
+                                    </button>
+                                </div>
+
+                                <!-- Mission 2 -->
+                                <div class="relative p-5 rounded-2xl border-2 ${completed.includes(2) ? 'border-emerald-500 bg-emerald-50/50' : m2Unlocked ? 'border-brand-500 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'} transition">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${completed.includes(2) ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-900'}">Misi 2</span>
+                                        <i class="fa-solid ${completed.includes(2) ? 'fa-circle-check text-emerald-500' : m2Unlocked ? 'fa-list-check text-brand-600' : 'fa-lock text-gray-400'} text-xl"></i>
+                                    </div>
+                                    <h4 class="font-extrabold text-brand-900 text-base mb-1">Deteksi 5W+1H</h4>
+                                    <p class="text-xs text-gray-500 mb-4 h-12">Lengkapi 6 unsur utama berita: Apa, Siapa, Di Mana, Kapan, Mengapa, & Bagaimana.</p>
+                                    <button onclick="app.startMission(2)" ${!m2Unlocked ? 'disabled' : ''} class="w-full py-2.5 rounded-xl font-extrabold text-xs ${completed.includes(2) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : m2Unlocked ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-md' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} transition">
+                                        ${completed.includes(2) ? 'Revisi Misi 2' : m2Unlocked ? 'Mulai Misi 2' : 'Selesaikan Misi 1'}
+                                    </button>
+                                </div>
+
+                                <!-- Mission 3 -->
+                                <div class="relative p-5 rounded-2xl border-2 ${completed.includes(3) ? 'border-emerald-500 bg-emerald-50/50' : m3Unlocked ? 'border-brand-500 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'} transition">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${completed.includes(3) ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-900'}">Misi 3</span>
+                                        <i class="fa-solid ${completed.includes(3) ? 'fa-circle-check text-emerald-500' : m3Unlocked ? 'fa-cubes-stacked text-brand-600' : 'fa-lock text-gray-400'} text-xl"></i>
+                                    </div>
+                                    <h4 class="font-extrabold text-brand-900 text-base mb-1">Struktur Berita</h4>
+                                    <p class="text-xs text-gray-500 mb-4 h-12">Susun Kepala Berita (Lead), Tubuh (Body), dan Ekor (Ending) berita.</p>
+                                    <button onclick="app.startMission(3)" ${!m3Unlocked ? 'disabled' : ''} class="w-full py-2.5 rounded-xl font-extrabold text-xs ${completed.includes(3) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : m3Unlocked ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-md' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} transition">
+                                        ${completed.includes(3) ? 'Revisi Misi 3' : m3Unlocked ? 'Mulai Misi 3' : 'Selesaikan Misi 2'}
+                                    </button>
+                                </div>
+
+                                <!-- Mission 4 -->
+                                <div class="relative p-5 rounded-2xl border-2 ${completed.includes(4) ? 'border-emerald-500 bg-emerald-50/50' : m4Unlocked ? 'border-brand-500 bg-white' : 'border-gray-200 bg-gray-50 opacity-60'} transition">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${completed.includes(4) ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-900'}">Misi 4</span>
+                                        <i class="fa-solid ${completed.includes(4) ? 'fa-circle-check text-emerald-500' : m4Unlocked ? 'fa-pen-to-square text-brand-600' : 'fa-lock text-gray-400'} text-xl"></i>
+                                    </div>
+                                    <h4 class="font-extrabold text-brand-900 text-base mb-1">Penyuntingan Kebahasaan</h4>
+                                    <p class="text-xs text-gray-500 mb-4 h-12">Perbaiki ejaan EYD, kalimat efektif, & kaidah kebahasaan berbantuan AI.</p>
+                                    <button onclick="app.startMission(4)" ${!m4Unlocked ? 'disabled' : ''} class="w-full py-2.5 rounded-xl font-extrabold text-xs ${completed.includes(4) ? 'bg-emerald-600 text-white hover:bg-emerald-700' : m4Unlocked ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-md' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} transition">
+                                        ${completed.includes(4) ? 'Revisi Misi 4' : m4Unlocked ? 'Mulai Misi 4' : 'Selesaikan Misi 3'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Publish Final Action -->
+                            <div class="mt-8 pt-6 border-t border-brand-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div class="text-xs text-gray-500">
+                                    <i class="fa-solid fa-sparkles text-amber-500 mr-1"></i>
+                                    <span>Publikasikan berita untuk masuk ke Galeri Karya & Dashboard Guru Shabrina.</span>
+                                </div>
+                                <button onclick="app.renderPublicationPreview()" ${!canPublish ? 'disabled' : ''} class="w-full sm:w-auto px-8 py-3.5 ${canPublish ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white hover:opacity-95 shadow-xl bouncy' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} font-black text-sm rounded-2xl transition flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Pratinjau & Publikasikan Berita</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            resetDraftForNewArticle() {
+                this.confirmModal("Setiap data peristiwa pada draf berita aktif akan dibersihkan agar kamu bisa mulai menulis dari awal. Publikasi beritamu yang sebelumnya tetap aman di Galeri. Lanjutkan?", () => {
+                    const db = StorageManager.getDb();
+                    db.drafts[this.session.user.id] = {
+                        newsMaterials: null,
+                        mission1: null,
+                        mission2: null,
+                        mission3: null,
+                        mission4: null,
+                        completedMissions: [],
+                    };
+                    StorageManager.saveDb(db);
+                    this.showToast("Draf berhasil di-reset! Kamu bisa memulai bahan berita baru.", "success");
+                    this.renderStudentDashboard();
+                }, "Reset Draf Berita");
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN 4 — FORMULIR BAHAN BERITA
+            // ----------------------------------------------------
+            renderMaterialsForm() {
+                const db = StorageManager.getDb();
+                const student = this.session.user;
+                const draft = db.drafts[student.id] || {};
+                const mat = draft.newsMaterials || {};
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="border-b border-brand-100 pb-4 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Siapkan Bahan Beritamu!</h3>
+                                <p class="text-xs text-gray-500 mt-1">Tentukan peristiwa yang ingin kamu beritakan. Jawaban ini menjadi dasar 4 misi berikutnya.</p>
+                            </div>
+                            <button onclick="app.renderStudentDashboard()" class="text-xs font-bold text-gray-500 hover:text-brand-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                        </div>
+
+                        <form onsubmit="app.saveMaterialsForm(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Judul Sementara Berita *</label>
+                                <input type="text" id="matTitle" required value="${mat.title || ''}" placeholder="Contoh: SMA Negeri 1 Gelar Pentas Seni Budaya Meriah" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Peristiwa Utama *</label>
+                                    <input type="text" id="matEvent" required value="${mat.event || ''}" placeholder="Peristiwa apa yang terjadi?" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Kategori Peristiwa *</label>
+                                    <select id="matCategory" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold bg-white">
+                                        <option value="Pendidikan" ${mat.category === 'Pendidikan' ? 'selected' : ''}>Pendidikan & Sekolah</option>
+                                        <option value="Lingkungan" ${mat.category === 'Lingkungan' ? 'selected' : ''}>Lingkungan & Sosial</option>
+                                        <option value="Kegiatan Siswa" ${mat.category === 'Kegiatan Siswa' ? 'selected' : ''}>Kegiatan Ekstrakurikuler / Siswa</option>
+                                        <option value="Prestasi" ${mat.category === 'Prestasi' ? 'selected' : ''}>Prestasi & Lomba</option>
+                                        <option value="Teknologi" ${mat.category === 'Teknologi' ? 'selected' : ''}>Sains & Teknologi</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Lokasi Peristiwa *</label>
+                                    <input type="text" id="matLocation" required value="${mat.location || ''}" placeholder="Tempat kejadian..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Waktu Peristiwa *</label>
+                                    <input type="text" id="matTime" required value="${mat.time || ''}" placeholder="Hari, tanggal, jam..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Pihak yang Terlibat *</label>
+                                    <input type="text" id="matInvolved" required value="${mat.involved || ''}" placeholder="Siapa saja yang terlibat?" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Nama Narasumber</label>
+                                    <input type="text" id="matSource" value="${mat.source || ''}" placeholder="Nama & jabatan narasumber (jika ada)" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Kutipan Narasumber (Opsional)</label>
+                                <textarea id="matQuote" rows="2" placeholder="Pernyataan langsung narasumber..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">${mat.quote || ''}</textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Fakta / Data Pendukung *</label>
+                                <textarea id="matFacts" required rows="2" placeholder="Angka, statistik, atau bukti konkret di lapangan..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">${mat.facts || ''}</textarea>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Kronologi Ringkas *</label>
+                                    <textarea id="matChronology" required rows="2" placeholder="Urutan kejadian..." class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">${mat.chronology || ''}</textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-brand-900 uppercase mb-1">Latar Belakang / Alasan *</label>
+                                    <textarea id="matReason" required rows="2" placeholder="Mengapa peristiwa ini terjadi?" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-brand-600 outline-none text-sm font-semibold">${mat.reason || ''}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-brand-100">
+                                <button type="button" onclick="app.renderStudentDashboard()" class="px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600 hover:bg-gray-100">Batal</button>
+                                <button type="submit" class="px-6 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 shadow-md transition">Simpan & Lanjut Ke Misi 1</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            }
+
+            saveMaterialsForm(e) {
+                e.preventDefault();
+                const newsMaterials = {
+                    title: document.getElementById('matTitle').value.trim(),
+                    event: document.getElementById('matEvent').value.trim(),
+                    category: document.getElementById('matCategory').value,
+                    location: document.getElementById('matLocation').value.trim(),
+                    time: document.getElementById('matTime').value.trim(),
+                    involved: document.getElementById('matInvolved').value.trim(),
+                    source: document.getElementById('matSource').value.trim(),
+                    quote: document.getElementById('matQuote').value.trim(),
+                    facts: document.getElementById('matFacts').value.trim(),
+                    chronology: document.getElementById('matChronology').value.trim(),
+                    reason: document.getElementById('matReason').value.trim()
+                };
+
+                const db = StorageManager.getDb();
+                const studentId = this.session.user.id;
+                if (!db.drafts[studentId]) db.drafts[studentId] = { completedMissions: [] };
+                db.drafts[studentId].newsMaterials = newsMaterials;
+
+                StorageManager.saveDb(db);
+                this.showToast("Bahan berita berhasil disimpan!", "success");
+                this.startMission(1);
+            }
+
+            startMission(missionNum) {
+                if (missionNum === 1) this.renderMission1Material();
+                else if (missionNum === 2) this.renderMission2Material();
+                else if (missionNum === 3) this.renderMission3Material();
+                else if (missionNum === 4) this.renderMission4Material();
+            }
+
+            // ----------------------------------------------------
+            // MISI 1 — IDENTIFIKASI FAKTA
+            // ----------------------------------------------------
+            renderMission1Material() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="flex items-center space-x-3 text-brand-600">
+                            <i class="fa-solid fa-magnifying-glass text-3xl"></i>
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Misi 1: Identifikasi Fakta</h3>
+                                <p class="text-xs text-gray-500">Pelajari ciri-ciri fakta sebelum mengerjakan latihan.</p>
+                            </div>
+                        </div>
+
+                        <!-- Educational Material Box -->
+                        <div class="bg-brand-50 p-6 rounded-2xl border-2 border-brand-200 space-y-4 text-sm text-brand-950">
+                            <h4 class="font-black text-brand-900 text-base flex items-center"><i class="fa-solid fa-book-open text-brand-600 mr-2"></i>Ciri-Ciri Fakta dalam Berita</h4>
+                            <ol class="list-decimal list-inside space-y-2 text-xs leading-relaxed font-semibold">
+                                /><span class="font-extrabold text-brand-900">Dapat Dibuktikan Kebenarannya:</span> Informasi benar-benar terjadi & didukung bukti jelas.</li>
+                                stroke="currentColor"><span class="font-extrabold text-brand-900">Data Akurat:</span> Menyertakan angka, waktu, tempat, dan nama yang valid.</li>
+                                stroke="currentColor"><span class="font-extrabold text-brand-900">Objektif:</span> Berdasarkan kenyataan, bukan perasaan atau opini pribadi penulis.</li>
+                            </ol>
+                            <div class="p-3.5 bg-yellow-100 rounded-xl border border-yellow-300 text-xs font-bold text-yellow-900 flex items-start space-x-2">
+                                <i class="fa-solid fa-lightbulb text-yellow-600 text-base mt-0.5"></i>
+                                <span><b>Catatan Penting:</b> Opini narasumber dapat dituliskan sebagai kutipan langsung yang diatribusikan secara jelas, tetapi tidak boleh dianggap sebagai fakta objektif secara otomatis.</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4">
+                            <button onclick="app.renderStudentDashboard()" class="px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Kembali ke Dashboard</button>
+                            <button onclick="app.renderMission1Practice()" class="px-6 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 shadow-md">Kerjakan Misi 1</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderMission1Practice() {
+                const db = StorageManager.getDb();
+                const draft = db.drafts[this.session.user.id] || {};
+                const mat = draft.newsMaterials || {};
+                const m1Data = draft.mission1 || [
+                    { statement: mat.event || '', evidence: mat.facts || '', type: 'Fakta' },
+                    { statement: `Peristiwa terjadi di ${mat.location || ''}`, evidence: 'Catatan lokasi', type: 'Fakta' },
+                    { statement: '', evidence: '', type: 'Fakta' },
+                    { statement: '', evidence: '', type: 'Fakta' },
+                    { statement: '', evidence: '', type: 'Fakta' }
+                ];
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div>
+                            <h3 class="text-2xl font-black text-brand-900">Temukan Fakta dalam Beritamu!</h3>
+                            <p class="text-xs text-gray-500 mt-1">Tuliskan minimal 5 fakta yang relevan dari bahan beritamu beserta bukti/sumbernya.</p>
+                        </div>
+
+                        <!-- Reference Pill -->
+                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 text-xs text-gray-700">
+                            <span class="font-extrabold text-brand-900 uppercase block mb-1">Acuan Bahan Beritamu:</span>
+                            <p><b>Peristiwa:</b> ${mat.event || '-'} &bull; <b>Lokasi:</b> ${mat.location || '-'} &bull; <b>Waktu:</b> ${mat.time || '-'}</p>
+                        </div>
+
+                        <!-- Facts Entry Table/Cards -->
+                        <div id="factsContainer" class="space-y-4">
+                            ${m1Data.map((f, idx) => this.generateFactRow(idx, f)).join('')}
+                        </div>
+
+                        <button onclick="app.addFactRow()" class="px-4 py-2 border-2 border-dashed border-brand-400 text-brand-700 font-extrabold text-xs rounded-xl hover:bg-brand-50 w-full">+ Tambah Baris Fakta</button>
+
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-brand-100">
+                            <button onclick="app.renderMission1Material()" class="w-full sm:w-auto px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Materi Misi 1</button>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <button onclick="app.saveMission1(false)" class="flex-1 sm:flex-none px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl">Simpan Draf</button>
+                                <button onclick="app.saveMission1(true)" class="flex-1 sm:flex-none px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md">Selesaikan Misi 1</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateFactRow(idx, f) {
+                return `
+                    <div class="fact-row p-4 bg-brand-50/50 rounded-2xl border border-brand-100 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-brand-900">Fakta #${idx + 1}</span>
+                            <select class="fact-type text-xs font-bold px-2 py-1 rounded-lg border border-brand-300 bg-white">
+                                <option value="Fakta" ${f.type === 'Fakta' ? 'selected' : ''}>Fakta</option>
+                                <option value="Opini" ${f.type === 'Opini' ? 'selected' : ''}>Opini Narasumber</option>
+                                <option value="Perlu Diverifikasi" ${f.type === 'Perlu Diverifikasi' ? 'selected' : ''}>Perlu Diverifikasi</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <input type="text" value="${f.statement || ''}" placeholder="Pernyataan fakta..." class="fact-stmt px-3 py-2 text-xs rounded-xl border border-gray-200 outline-none font-semibold">
+                            <input type="text" value="${f.evidence || ''}" placeholder="Bukti / Sumber pendukung..." class="fact-evid px-3 py-2 text-xs rounded-xl border border-gray-200 outline-none font-semibold">
+                        </div>
+                    </div>
+                `;
+            }
+
+            addFactRow() {
+                const container = document.getElementById('factsContainer');
+                const currentRows = container.querySelectorAll('.fact-row').length;
+                const div = document.createElement('div');
+                div.innerHTML = this.generateFactRow(currentRows, { statement: '', evidence: '', type: 'Fakta' });
+                container.appendChild(div.firstElementChild);
+            }
+
+            saveMission1(complete = false) {
+                const rows = document.querySelectorAll('.fact-row');
+                const facts = [];
+                rows.forEach(r => {
+                    const statement = r.querySelector('.fact-stmt').value.trim();
+                    const evidence = r.querySelector('.fact-evid').value.trim();
+                    const type = r.querySelector('.fact-type').value;
+                    if (statement || evidence) {
+                        facts.push({ statement, evidence, type });
+                    }
+                });
+
+                if (complete) {
+                    if (facts.length < 5) {
+                        this.showToast("Misi 1 membutuhkan minimal 5 fakta terisi lengkap!", "warning");
+                        return;
+                    }
+                    const validCount = facts.filter(f => f.statement.length > 3 && f.evidence.length > 2).length;
+                    if (validCount < 5) {
+                        this.showToast("Pastikan kelima fakta memiliki pernyataan & bukti yang jelas!", "warning");
+                        return;
+                    }
+                }
+
+                const db = StorageManager.getDb();
+                const studentId = this.session.user.id;
+                db.drafts[studentId].mission1 = facts;
+                if (complete && !db.drafts[studentId].completedMissions.includes(1)) {
+                    db.drafts[studentId].completedMissions.push(1);
+                }
+
+                StorageManager.saveDb(db);
+                this.showToast(complete ? "Misi 1 Selesai! Misi 2 Terbuka." : "Draf Misi 1 tersimpan.", "success");
+                if (complete) this.renderMission2Material();
+            }
+
+            // ----------------------------------------------------
+            // MISI 2 — DETEKSI 5W+1H
+            // ----------------------------------------------------
+            renderMission2Material() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="flex items-center space-x-3 text-brand-600">
+                            <i class="fa-solid fa-list-check text-3xl"></i>
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Misi 2: Deteksi Unsur 5W+1H</h3>
+                                <p class="text-xs text-gray-500">Pahami 6 unsur jurnalistik penting dalam penulisan berita.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">1. WHAT (Apa)</span>
+                                <span class="text-gray-600">Peristiwa apa yang terjadi?</span>
+                            </div>
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">2. WHO (Siapa)</span>
+                                <span class="text-gray-600">Siapa yang terlibat?</span>
+                            </div>
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">3. WHERE (Di mana)</span>
+                                <span class="text-gray-600">Di mana lokasi kejadian?</span>
+                            </div>
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">4. WHEN (Kapan)</span>
+                                <span class="text-gray-600">Kapan waktu terjadinya?</span>
+                            </div>
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">5. WHY (Mengapa)</span>
+                                <span class="text-gray-600">Mengapa peristiwa terjadi?</span>
+                            </div>
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl">
+                                <span class="font-black text-brand-900 block">6. HOW (Bagaimana)</span>
+                                <span class="text-gray-600">Bagaimana kronologinya?</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4">
+                            <button onclick="app.renderStudentDashboard()" class="px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Kembali</button>
+                            <button onclick="app.renderMission2Practice()" class="px-6 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 shadow-md">Kerjakan Misi 2</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderMission2Practice() {
+                const db = StorageManager.getDb();
+                const draft = db.drafts[this.session.user.id] || {};
+                const mat = draft.newsMaterials || {};
+                const m2 = draft.mission2 || {
+                    what: mat.event || '',
+                    who: mat.involved || '',
+                    where: mat.location || '',
+                    when: mat.time || '',
+                    why: mat.reason || '',
+                    how: mat.chronology || '',
+                    notFoundFlags: {}
+                };
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div>
+                            <h3 class="text-2xl font-black text-brand-900">Lengkapi Unsur 5W+1H</h3>
+                            <p class="text-xs text-gray-500 mt-1">Isi 6 unsur berita di bawah ini. Jika ada yang belum diketahui, centang opsi "Belum Ditemukan".</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${this.generate5WCard('what', 'WHAT (Apa)', 'Peristiwa apa yang terjadi?', m2.what, m2.notFoundFlags?.what)}
+                            ${this.generate5WCard('who', 'WHO (Siapa)', 'Siapa yang terlibat / narasumber?', m2.who, m2.notFoundFlags?.who)}
+                            ${this.generate5WCard('where', 'WHERE (Di Mana)', 'Lokasi rinci peristiwa', m2.where, m2.notFoundFlags?.where)}
+                            ${this.generate5WCard('when', 'WHEN (Kapan)', 'Waktu kejadian', m2.when, m2.notFoundFlags?.when)}
+                            ${this.generate5WCard('why', 'WHY (Mengapa)', 'Latar belakang & penyebab', m2.why, m2.notFoundFlags?.why)}
+                            ${this.generate5WCard('how', 'HOW (Bagaimana)', 'Kronologi & alur peristiwa', m2.how, m2.notFoundFlags?.how)}
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-brand-100">
+                            <button onclick="app.renderMission2Material()" class="w-full sm:w-auto px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Materi Misi 2</button>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <button onclick="app.saveMission2(false)" class="flex-1 sm:flex-none px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl">Simpan Draf</button>
+                                <button onclick="app.saveMission2(true)" class="flex-1 sm:flex-none px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md">Selesaikan Misi 2</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generate5WCard(key, title, subtitle, val, notFound) {
+                return `
+                    <div class="p-4 bg-brand-50/60 rounded-2xl border border-brand-100 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-brand-900">${title}</span>
+                            <label class="flex items-center space-x-1 cursor-pointer text-[11px] text-gray-500 font-semibold">
+                                <input type="checkbox" id="chk_${key}" onchange="app.toggle5WNotFound('${key}')" ${notFound ? 'checked' : ''} class="rounded border-gray-300 text-brand-600 focus:ring-brand-500">
+                                <span>Belum Ditemukan</span>
+                            </label>
+                        </div>
+                        <p class="text-[11px] text-gray-500 font-medium">${subtitle}</p>
+                        <textarea id="val_${key}" ${notFound ? 'disabled placeholder="Status: Belum Ditemukan"' : ''} rows="2" class="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 focus:border-brand-600 outline-none font-semibold ${notFound ? 'bg-gray-100 text-gray-400' : 'bg-white'}">${val || ''}</textarea>
+                    </div>
+                `;
+            }
+
+            toggle5WNotFound(key) {
+                const chk = document.getElementById(`chk_${key}`).checked;
+                const txt = document.getElementById(`val_${key}`);
+                txt.disabled = chk;
+                if (chk) {
+                    txt.classList.add('bg-gray-100', 'text-gray-400');
+                    txt.placeholder = "Status: Belum Ditemukan";
+                } else {
+                    txt.classList.remove('bg-gray-100', 'text-gray-400');
+                    txt.placeholder = "Tuliskan unsur di sini...";
+                }
+            }
+
+            saveMission2(complete = false) {
+                const keys = ['what', 'who', 'where', 'when', 'why', 'how'];
+                const m2Data = { notFoundFlags: {} };
+                let allValid = true;
+
+                keys.forEach(k => {
+                    const chk = document.getElementById(`chk_${k}`).checked;
+                    const val = document.getElementById(`val_${k}`).value.trim();
+                    m2Data.notFoundFlags[k] = chk;
+                    m2Data[k] = val;
+
+                    if (!chk && !val) {
+                        allValid = false;
+                    }
+                });
+
+                if (complete && !allValid) {
+                    this.showToast("Setiap unsur wajib diisi atau ditandai 'Belum Ditemukan'!", "warning");
+                    return;
+                }
+
+                const db = StorageManager.getDb();
+                const studentId = this.session.user.id;
+                db.drafts[studentId].mission2 = m2Data;
+                if (complete && !db.drafts[studentId].completedMissions.includes(2)) {
+                    db.drafts[studentId].completedMissions.push(2);
+                }
+
+                StorageManager.saveDb(db);
+                this.showToast(complete ? "Misi 2 Selesai! Misi 3 Terbuka." : "Draf Misi 2 tersimpan.", "success");
+                if (complete) this.renderMission3Material();
+            }
+
+            // ----------------------------------------------------
+            // MISI 3 — STRUKTUR BERITA
+            // ----------------------------------------------------
+            renderMission3Material() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="flex items-center space-x-3 text-brand-600">
+                            <i class="fa-solid fa-cubes-stacked text-3xl"></i>
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Misi 3: Struktur Berita</h3>
+                                <p class="text-xs text-gray-500">Pahami piramida terbalik struktur berita modern.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-xs">
+                            <div class="p-4 bg-brand-50 border-l-4 border-brand-600 rounded-r-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">1. Kepala Berita (Lead)</h4>
+                                <p class="text-gray-600 mt-1">Bagian paling penting yang memuat inti peristiwa (unsur Utama 5W+1H).</p>
+                            </div>
+                            <div class="p-4 bg-brand-50 border-l-4 border-brand-400 rounded-r-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">2. Tubuh Berita (Body)</h4>
+                                <p class="text-gray-600 mt-1">Penjelasan rinci, kronologi lengkap, alasan, serta kutipan narasumber.</p>
+                            </div>
+                            <div class="p-4 bg-brand-50 border-l-4 border-brand-200 rounded-r-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">3. Ekor Berita (Ending)</h4>
+                                <p class="text-gray-600 mt-1">Informasi tambahan / penutup yang tingkat kepentingannya relatif sekunder.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4">
+                            <button onclick="app.renderStudentDashboard()" class="px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Kembali</button>
+                            <button onclick="app.renderMission3Practice()" class="px-6 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 shadow-md">Kerjakan Misi 3</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderMission3Practice() {
+                const db = StorageManager.getDb();
+                const draft = db.drafts[this.session.user.id] || {};
+                const mat = draft.newsMaterials || {};
+                const m2 = draft.mission2 || {};
+                const m3 = draft.mission3 || { lead: '', body: '', ending: '' };
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-5xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div>
+                            <h3 class="text-2xl font-black text-brand-900">Bangun Struktur Beritamu!</h3>
+                            <p class="text-xs text-gray-500 mt-1">Tuliskan minimal 3 kalimat pada setiap bagian (Kepala, Tubuh, & Ekor berita).</p>
+                        </div>
+
+                        <!-- Reference Sidebar Panel -->
+                        <div class="p-4 bg-brand-50 rounded-2xl border border-brand-200 text-xs text-gray-700 space-y-1">
+                            <span class="font-extrabold text-brand-900 block uppercase">Ringkasan Unsur (Acuan Menulis):</span>
+                            <p><b>[Apa]</b> ${m2.what || mat.event || '-'} | <b>[Siapa]</b> ${m2.who || mat.involved || '-'}</p>
+                            <p><b>[Di mana & Kapan]</b> ${m2.where || mat.location || '-'}, ${m2.when || mat.time || '-'}</p>
+                        </div>
+
+                        <!-- Editors Grid -->
+                        <div class="space-y-4">
+                            <!-- Lead Editor -->
+                            <div class="p-4 bg-white border-2 border-brand-200 rounded-2xl space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-black text-brand-900 uppercase">A. Kepala Berita (Lead)</label>
+                                    <span id="leadSentenceCount" class="text-[11px] font-bold text-brand-600">0 Kalimat (Min. 3)</span>
+                                </div>
+                                <textarea id="textLead" oninput="app.updateSentenceCounters()" rows="3" placeholder="Tuliskan inti berita..." class="w-full px-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-brand-600 outline-none font-semibold leading-relaxed">${m3.lead || ''}</textarea>
+                            </div>
+
+                            <!-- Body Editor -->
+                            <div class="p-4 bg-white border-2 border-brand-200 rounded-2xl space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-black text-brand-900 uppercase">B. Tubuh Berita (Body)</label>
+                                    <span id="bodySentenceCount" class="text-[11px] font-bold text-brand-600">0 Kalimat (Min. 3)</span>
+                                </div>
+                                <textarea id="textBody" oninput="app.updateSentenceCounters()" rows="5" placeholder="Jelaskan rincian & kronologi..." class="w-full px-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-brand-600 outline-none font-semibold leading-relaxed">${m3.body || ''}</textarea>
+                            </div>
+
+                            <!-- Ending Editor -->
+                            <div class="p-4 bg-white border-2 border-brand-200 rounded-2xl space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-black text-brand-900 uppercase">C. Ekor Berita (Ending)</label>
+                                    <span id="endingSentenceCount" class="text-[11px] font-bold text-brand-600">0 Kalimat (Min. 3)</span>
+                                </div>
+                                <textarea id="textEnding" oninput="app.updateSentenceCounters()" rows="3" placeholder="Tuliskan penutup / fakta tambahan..." class="w-full px-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:border-brand-600 outline-none font-semibold leading-relaxed">${m3.ending || ''}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-brand-100">
+                            <button onclick="app.renderMission3Material()" class="w-full sm:w-auto px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Materi Misi 3</button>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <button onclick="app.saveMission3(false)" class="flex-1 sm:flex-none px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl">Simpan Draf</button>
+                                <button onclick="app.saveMission3(true)" class="flex-1 sm:flex-none px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md">Selesaikan Misi 3</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.updateSentenceCounters();
+            }
+
+            countSentences(text) {
+                if (!text || text.trim() === '') return 0;
+                const matches = text.trim().split(/[.!?]+/).filter(s => s.trim().length > 3);
+                return matches.length;
+            }
+
+            updateSentenceCounters() {
+                const lead = document.getElementById('textLead').value;
+                const body = document.getElementById('textBody').value;
+                const ending = document.getElementById('textEnding').value;
+
+                const cLead = this.countSentences(lead);
+                const cBody = this.countSentences(body);
+                const cEnding = this.countSentences(ending);
+
+                document.getElementById('leadSentenceCount').innerText = `${cLead} Kalimat (Min. 3)`;
+                document.getElementById('bodySentenceCount').innerText = `${cBody} Kalimat (Min. 3)`;
+                document.getElementById('endingSentenceCount').innerText = `${cEnding} Kalimat (Min. 3)`;
+            }
+
+            saveMission3(complete = false) {
+                const lead = document.getElementById('textLead').value.trim();
+                const body = document.getElementById('textBody').value.trim();
+                const ending = document.getElementById('textEnding').value.trim();
+
+                const cLead = this.countSentences(lead);
+                const cBody = this.countSentences(body);
+                const cEnding = this.countSentences(ending);
+
+                if (complete) {
+                    if (cLead < 3 || cBody < 3 || cEnding < 3) {
+                        this.showToast("Setiap bagian struktur (Lead, Body, Ending) wajib berisi minimal 3 kalimat!", "warning");
+                        return;
+                    }
+                }
+
+                const db = StorageManager.getDb();
+                const studentId = this.session.user.id;
+                db.drafts[studentId].mission3 = { lead, body, ending };
+                if (complete && !db.drafts[studentId].completedMissions.includes(3)) {
+                    db.drafts[studentId].completedMissions.push(3);
+                }
+
+                StorageManager.saveDb(db);
+                this.showToast(complete ? "Misi 3 Selesai! Misi 4 Terbuka." : "Draf Misi 3 tersimpan.", "success");
+                if (complete) this.renderMission4Material();
+            }
+
+            // ----------------------------------------------------
+            // MISI 4 — PENYUNTINGAN & KAIDAH KEBAHASAAN
+            // ----------------------------------------------------
+            renderMission4Material() {
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="flex items-center space-x-3 text-brand-600">
+                            <i class="fa-solid fa-pen-to-square text-3xl"></i>
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Misi 4: Penyuntingan Kebahasaan</h3>
+                                <p class="text-xs text-gray-500">Pelajari kaidah Ejaan Bahasa Indonesia (EYD) & tata bahasa jurnalistik.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-xs">
+                            <div class="p-4 bg-brand-50 border border-brand-200 rounded-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">1. Bahasa Baku & EYD</h4>
+                                <p class="text-gray-600 mt-1">Gunakan kata baku (misal: *di mana* dipisah, kata serapan sesuai kamus).</p>
+                            </div>
+                            <div class="p-4 bg-brand-50 border border-brand-200 rounded-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">2. Kalimat Langsung</h4>
+                                <p class="text-gray-600 mt-1">Kutipan narasumber diapit tanda petik ganda. Contoh: Kepala Sekolah menyatakan, "Kegiatan ini berjalan lancar."</p>
+                            </div>
+                            <div class="p-4 bg-brand-50 border border-brand-200 rounded-2xl">
+                                <h4 class="font-extrabold text-brand-900 text-sm">3. Verba Mental & Konjungsi Temporal</h4>
+                                <p class="text-gray-600 mt-1">Verba mental (menilai, memperkirakan) & kata hubung waktu (kemudian, setelah itu).</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4">
+                            <button onclick="app.renderStudentDashboard()" class="px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Kembali</button>
+                            <button onclick="app.renderMission4Practice()" class="px-6 py-2.5 bg-brand-600 text-white font-extrabold text-xs rounded-xl hover:bg-brand-700 shadow-md">Kerjakan Misi 4</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderMission4Practice() {
+                const db = StorageManager.getDb();
+                const draft = db.drafts[this.session.user.id] || {};
+                const m3 = draft.mission3 || { lead: '', body: '', ending: '' };
+                const m4 = draft.mission4 || {
+                    editedText: `${m3.lead}\n\n${m3.body}\n\n${m3.ending}`,
+                    suggestions: []
+                };
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-6xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-brand-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Editor Penyuntingan Kebahasaan</h3>
+                                <p class="text-xs text-gray-500">Periksa draf berita dengan bantuan AI Checker atau sunting secara manual.</p>
+                            </div>
+                            <button onclick="app.runAISuggestions()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center space-x-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Periksa Kebahasaan (AI Assistant)</span>
+                            </button>
+                        </div>
+
+                        <!-- 2-Panel Side by Side Editor -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Left Panel: Live Draft Text Editor -->
+                            <div class="md:col-span-2 space-y-2">
+                                <label class="block text-xs font-black text-brand-900 uppercase">Draf Lengkap Berita</label>
+                                <textarea id="m4LiveEditor" rows="14" class="w-full px-4 py-3 text-xs rounded-2xl border-2 border-brand-200 focus:border-brand-600 outline-none font-semibold leading-relaxed shadow-inner">${m4.editedText || ''}</textarea>
+                            </div>
+
+                            <!-- Right Panel: AI Suggestions Box -->
+                            <div class="bg-brand-50/70 p-4 rounded-2xl border border-brand-200 space-y-3 overflow-y-auto max-h-[420px]">
+                                <h4 class="font-extrabold text-brand-900 text-xs uppercase flex items-center justify-between">
+                                    <span>Saran Perbaikan</span>
+                                    <span id="sugBadge" class="px-2 py-0.5 bg-brand-200 text-brand-900 rounded-md text-[10px]">0 Terdeteksi</span>
+                                </h4>
+                                <div id="suggestionsList" class="space-y-2 text-xs">
+                                    <p class="text-gray-400 text-center py-8 text-[11px]">Klik tombol "Periksa Kebahasaan" untuk mendeteksi potensi kesalahan ejaan atau struktur.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-brand-100">
+                            <button onclick="app.renderMission4Material()" class="w-full sm:w-auto px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Materi Misi 4</button>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <button onclick="app.saveMission4(false)" class="flex-1 sm:flex-none px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl">Simpan Draf</button>
+                                <button onclick="app.saveMission4(true)" class="flex-1 sm:flex-none px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md">Selesaikan Misi 4</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            runAISuggestions() {
+                const text = document.getElementById('m4LiveEditor').value;
+                if (!text || text.trim().length < 10) {
+                    this.showToast("Draf berita terlalu pendek untuk diperiksa AI!", "warning");
+                    return;
+                }
+
+                // Simulated AI Grammar & EYD Rules Engine
+                const suggestions = [];
+                if (text.includes("dimana")) {
+                    suggestions.push({ original: "dimana", replacement: "di mana", reason: "Kata depan 'di' penunjuk tempat wajib dipisah." });
+                }
+                if (text.includes("diikutsertakan")) {
+                    suggestions.push({ original: "diikutsertakan", replacement: "diikutsertakan", reason: "Sudah benar penulisan kata berimbuhan gabung." });
+                }
+                if (!text.includes('"')) {
+                    suggestions.push({ original: "-", replacement: 'Menambahkan Kutipan "..."', reason: "Disarankan menyertakan kalimat langsung narasumber." });
+                }
+                if (text.includes("yg")) {
+                    suggestions.push({ original: "yg", replacement: "yang", reason: "Gunakan kata baku 'yang', hindari singkatan informal." });
+                }
+                if (text.includes("dgn")) {
+                    suggestions.push({ original: "dgn", replacement: "dengan", reason: "Gunakan kata baku 'dengan'." });
+                }
+
+                // Generic quality recommendation if clean
+                if (suggestions.length === 0) {
+                    suggestions.push({ original: "Kaidah Kebahasaan", replacement: "Sesuai Standard", reason: "Ejaan dan struktur secara umum sudah baik & baku." });
+                }
+
+                const list = document.getElementById('suggestionsList');
+                document.getElementById('sugBadge').innerText = `${suggestions.length} Catatan`;
+                list.innerHTML = suggestions.map((s, idx) => `
+                    <div class="p-3 bg-white rounded-xl border border-brand-200 space-y-1">
+                        <span class="font-extrabold text-brand-900 block">Saran #${idx + 1}</span>
+                        <p class="text-gray-600 text-[11px]">${s.reason}</p>
+                        ${s.original !== '-' ? `<div class="flex items-center space-x-2 pt-1">
+                            <span class="line-through text-red-500 font-bold">${s.original}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px] text-gray-400"></i>
+                            <span class="text-emerald-600 font-extrabold">${s.replacement}</span>
+                        </div>` : ''}
+                    </div>
+                `).join('');
+
+                this.showToast("Pemeriksaan AI selesai!", "success");
+            }
+
+            saveMission4(complete = false) {
+                const editedText = document.getElementById('m4LiveEditor').value.trim();
+
+                if (complete && editedText.length < 50) {
+                    this.showToast("Draf berita terlalu pendek untuk diselesaikan!", "warning");
+                    return;
+                }
+
+                const db = StorageManager.getDb();
+                const studentId = this.session.user.id;
+                db.drafts[studentId].mission4 = { editedText };
+                if (complete && !db.drafts[studentId].completedMissions.includes(4)) {
+                    db.drafts[studentId].completedMissions.push(4);
+                }
+
+                StorageManager.saveDb(db);
+                this.showToast(complete ? "Selamat! Semua 4 Misi Telah Selesai." : "Draf Misi 4 tersimpan.", "success");
+                if (complete) this.renderPublicationPreview();
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN PRATINJAU & PUBLIKASI BERITA
+            // ----------------------------------------------------
+            renderPublicationPreview() {
+                const db = StorageManager.getDb();
+                const student = this.session.user;
+                const draft = db.drafts[student.id] || {};
+                const mat = draft.newsMaterials || {};
+                const m4 = draft.mission4 || {};
+
+                const fullContent = m4.editedText || 'Isi berita belum lengkap.';
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-brand-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-brand-100 pb-4 gap-4">
+                            <div>
+                                <h3 class="text-2xl font-black text-brand-900">Beritamu Siap Dipublikasikan!</h3>
+                                <p class="text-xs text-gray-500">Pratinjau tampilan koran / artikel resmi sebelum diterbitkan.</p>
+                            </div>
+                            
+                            <!-- Font Switcher -->
+                            <div class="flex items-center space-x-2 bg-brand-50 p-1.5 rounded-xl border border-brand-200 text-xs font-extrabold">
+                                <span class="text-gray-500 px-2">Font:</span>
+                                <button onclick="app.changePreviewFont('font-sans')" id="btnFontSans" class="px-3 py-1 rounded-lg bg-brand-600 text-white shadow">Calibri</button>
+                                <button onclick="app.changePreviewFont('font-formal')" id="btnFontFormal" class="px-3 py-1 rounded-lg text-brand-900 hover:bg-brand-200">Times New Roman</button>
+                            </div>
+                        </div>
+
+                        <!-- Formal Newspaper Card Preview -->
+                        <div id="previewPaper" class="p-8 bg-slate-50 border border-slate-200 rounded-2xl shadow-inner font-sans space-y-4">
+                            <div class="border-b-2 border-slate-900 pb-3">
+                                <span class="text-[11px] font-extrabold text-brand-700 uppercase tracking-widest">${mat.category || 'BERITA SEKOLAH'}</span>
+                                <h1 class="text-3xl font-black text-slate-900 mt-1 leading-tight">${mat.title || 'Judul Berita'}</h1>
+                                <div class="flex items-center space-x-3 text-xs text-slate-500 mt-3 font-semibold">
+                                    <span>Penulis: <b>${student.name}</b> (${student.class})</span>
+                                    <span>&bull;</span>
+                                    <span>Tanggal: <b>${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</b></span>
+                                </div>
+                            </div>
+
+                            <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-line font-medium py-2">
+                                ${fullContent}
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-200 text-[11px] text-slate-500 flex justify-between">
+                                <span>Sumber: ${mat.source || 'Data Jurnalistik Siswa'}</span>
+                                <span>Status: Siap Publikasi</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-brand-100">
+                            <button onclick="app.renderStudentDashboard()" class="w-full sm:w-auto px-5 py-2.5 border-2 border-gray-200 rounded-xl font-extrabold text-xs text-gray-600">Kembali ke Dashboard</button>
+                            <button onclick="app.publishNewsArticle()" class="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-xl shadow-xl transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Publikasikan Berita Sekarang</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            changePreviewFont(fontClass) {
+                const paper = document.getElementById('previewPaper');
+                const btnSans = document.getElementById('btnFontSans');
+                const btnFormal = document.getElementById('btnFontFormal');
+
+                paper.className = paper.className.replace('font-sans', '').replace('font-formal', '') + ' ' + fontClass;
+                if (fontClass === 'font-sans') {
+                    btnSans.className = "px-3 py-1 rounded-lg bg-brand-600 text-white shadow font-bold";
+                    btnFormal.className = "px-3 py-1 rounded-lg text-brand-900 hover:bg-brand-200 font-bold";
+                } else {
+                    btnFormal.className = "px-3 py-1 rounded-lg bg-brand-600 text-white shadow font-bold";
+                    btnSans.className = "px-3 py-1 rounded-lg text-brand-900 hover:bg-brand-200 font-bold";
+                }
+            }
+
+            publishNewsArticle() {
+                this.confirmModal("Apakah Anda yakin ingin mempublikasikan berita ini ke Galeri dan Dashboard Guru?", () => {
+                    const db = StorageManager.getDb();
+                    const student = this.session.user;
+                    const draft = db.drafts[student.id] || {};
+                    const mat = draft.newsMaterials || {};
+                    const m4 = draft.mission4 || {};
+
+                    const newPublication = {
+                        id: 'PUB_' + Date.now(),
+                        studentId: student.id,
+                        authorName: student.name,
+                        class: student.class,
+                        absno: student.absno,
+                        title: mat.title || 'Judul Berita',
+                        category: mat.category || 'Umum',
+                        content: m4.editedText || '',
+                        materials: mat,
+                        date: new Date().toISOString(),
+                        evaluation: null // Filled by teacher
+                    };
+
+                    db.publishedNews.unshift(newPublication);
+                    StorageManager.saveDb(db);
+
+                    this.showToast("Berita berhasil dipublikasikan!", "success");
+                    this.showGallery();
+                }, "Publikasi Berita");
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN GALERI / DASHBOARD KARYA SISWA
+            // ----------------------------------------------------
+            showGallery() {
+                const db = StorageManager.getDb();
+                const allNews = db.publishedNews || [];
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-3xl font-black text-brand-900">Galeri Rancang Berita</h2>
+                                <p class="text-xs text-gray-500">Kumpulan artikel berita berkualitas karya siswa kelas XI SMA.</p>
+                            </div>
+                            
+                            <!-- Search & Filter Inputs -->
+                            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                                <input type="text" id="gallerySearch" oninput="app.filterGallery()" placeholder="Cari judul / penulis..." class="px-3.5 py-2 text-xs rounded-xl border-2 border-brand-200 outline-none font-semibold w-full sm:w-48">
+                                <select id="galleryClassFilter" onchange="app.filterGallery()" class="px-3 py-2 text-xs rounded-xl border-2 border-brand-200 outline-none font-semibold bg-white">
+                                    <option value="ALL">Semua Kelas</option>
+                                    ${CLASS_OPTIONS.map(c => `<option value="${c}">Kelas ${c}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- News Grid -->
+                        <div id="galleryGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${allNews.length > 0 ? allNews.map(n => this.generateGalleryCard(n)).join('') : '<p class="text-gray-400 text-xs text-center col-span-full py-12">Belum ada berita yang dipublikasikan.</p>'}
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateGalleryCard(news) {
+                return `
+                    <div class="bg-white rounded-3xl p-6 shadow-xl border-2 border-brand-100 flex flex-col justify-between space-y-4 hover:border-brand-300 transition">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-1 bg-brand-100 text-brand-900 rounded-lg text-[10px] font-black uppercase">${news.category}</span>
+                                <span class="text-[10px] font-bold text-gray-400">Kelas ${news.class}</span>
+                            </div>
+                            <h3 class="font-extrabold text-brand-900 text-lg leading-snug line-clamp-2">${news.title}</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">${news.content}</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-brand-50 flex items-center justify-between">
+                            <div class="text-[11px]">
+                                <span class="font-bold text-brand-900 block">${news.authorName}</span>
+                                <span class="text-gray-400">${new Date(news.date).toLocaleDateString('id-ID')}</span>
+                            </div>
+                            <button onclick="app.readNewsDetail('${news.id}')" class="px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold text-xs rounded-xl transition">Baca Berita</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            filterGallery() {
+                const search = document.getElementById('gallerySearch').value.toLowerCase();
+                const cls = document.getElementById('galleryClassFilter').value;
+                const db = StorageManager.getDb();
+                let news = db.publishedNews || [];
+
+                if (cls !== 'ALL') {
+                    news = news.filter(n => n.class === cls);
+                }
+                if (search) {
+                    news = news.filter(n => n.title.toLowerCase().includes(search) || n.authorName.toLowerCase().includes(search));
+                }
+
+                const grid = document.getElementById('galleryGrid');
+                grid.innerHTML = news.length > 0 ? news.map(n => this.generateGalleryCard(n)).join('') : '<p class="text-gray-400 text-xs text-center col-span-full py-12">Tidak ada berita yang sesuai filter.</p>';
+            }
+
+            readNewsDetail(newsId) {
+                const db = StorageManager.getDb();
+                const news = db.publishedNews.find(n => n.id === newsId);
+                if (!news) return;
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-xl border-4 border-brand-100 space-y-6">
+                        <button onclick="app.showGallery()" class="px-4 py-2 bg-brand-50 text-brand-700 font-extrabold text-xs rounded-xl hover:bg-brand-100"><i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Galeri</button>
+
+                        <div class="border-b-2 border-brand-900 pb-4">
+                            <span class="px-2.5 py-1 bg-brand-100 text-brand-900 rounded-lg text-xs font-black uppercase">${news.category}</span>
+                            <h1 class="text-3xl font-black text-brand-900 mt-2 leading-tight">${news.title}</h1>
+                            <p class="text-xs text-gray-500 mt-2 font-semibold">Penulis: <b>${news.authorName}</b> &bull; Kelas: <b>${news.class}</b> &bull; Diterbitkan: <b>${new Date(news.date).toLocaleDateString('id-ID')}</b></p>
+                        </div>
+
+                        <div class="text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                            ${news.content}
+                        </div>
+
+                        ${news.evaluation ? `
+                            <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+                                <h4 class="font-extrabold text-amber-900 text-xs uppercase flex items-center"><i class="fa-solid fa-star text-amber-500 mr-1.5"></i> Penilaian Guru Shabrina: ${news.evaluation.finalScore} / 100</h4>
+                                <p class="text-xs text-amber-900 font-medium"><b>Catatan Guru:</b> "${news.evaluation.feedback || 'Sangat baik!'}"</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // ----------------------------------------------------
+            // HALAMAN DASHBOARD GURU & EVALUASI
+            // ----------------------------------------------------
+            renderTeacherDashboard() {
+                const db = StorageManager.getDb();
+                const students = db.students || [];
+                const published = db.publishedNews || [];
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Dashboard Header -->
+                        <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div>
+                                <div class="inline-block px-3 py-1 bg-amber-900/40 text-white font-extrabold text-xs rounded-full uppercase mb-1">
+                                    Portal Guru Pengampu
+                                </div>
+                                <h2 class="text-2xl font-black">${TEACHER_NAME}</h2>
+                                <p class="text-xs text-amber-100 mt-0.5">Pantau progres penulisan berita, evaluasi karya siswa, dan impor/ekspor data server.</p>
+                            </div>
+
+                            <!-- Data Backup Actions -->
+                            <div class="flex space-x-2">
+                                <button onclick="StorageManager.exportJSON()" class="px-4 py-2.5 bg-white text-amber-900 font-extrabold text-xs rounded-xl shadow hover:bg-amber-50 transition">
+                                    <i class="fa-solid fa-download mr-1"></i> Ekspor Data JSON
+                                </button>
+                                <label class="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-extrabold text-xs rounded-xl shadow cursor-pointer transition">
+                                    <i class="fa-solid fa-upload mr-1"></i> Impor Data JSON
+                                    <input type="file" accept=".json" onchange="app.handleImportJSON(event)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Statistics Grid -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                                <span class="text-[11px] font-bold text-gray-400 uppercase">Siswa Terdaftar</span>
+                                <div class="text-2xl font-black text-brand-900 mt-1">${students.length}</div>
+                            </div>
+                            <div class="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                                <span class="text-[11px] font-bold text-gray-400 uppercase">Berita Dipublikasi</span>
+                                <div class="text-2xl font-black text-emerald-600 mt-1">${published.length}</div>
+                            </div>
+                            <div class="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                                <span class="text-[11px] font-bold text-gray-400 uppercase">Perlu Dinilai</span>
+                                <div class="text-2xl font-black text-amber-500 mt-1">${published.filter(p => !p.evaluation).length}</div>
+                            </div>
+                            <div class="p-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
+                                <span class="text-[11px] font-bold text-gray-400 uppercase">Total Kelas</span>
+                                <div class="text-2xl font-black text-brand-600 mt-1">12 Kelas</div>
+                            </div>
+                        </div>
+
+                        <!-- Student Monitoring Table -->
+                        <div class="bg-white rounded-3xl p-6 shadow-xl border-4 border-brand-100 space-y-4">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <h3 class="text-lg font-black text-brand-900">Daftar Progres Siswa</h3>
+                                <select id="teacherClassFilter" onchange="app.filterTeacherTable()" class="px-3 py-1.5 text-xs rounded-xl border border-gray-200 font-semibold bg-white">
+                                    <option value="ALL">Semua Kelas</option>
+                                    ${CLASS_OPTIONS.map(c => `<option value="${c}">Kelas ${c}</option>`).join('')}
+                                </select>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-brand-50 text-brand-900 border-b border-brand-200 font-black">
+                                            <th class="p-3">Nama Siswa</th>
+                                            <th class="p-3">Kelas</th>
+                                            <th class="p-3">Absen</th>
+                                            <th class="p-3 text-center">Progres Misi</th>
+                                            <th class="p-3 text-center">Publikasi</th>
+                                            <th class="p-3 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teacherStudentTable">
+                                        ${this.generateTeacherTableRows(students, published)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            generateTeacherTableRows(students, published) {
+                const db = StorageManager.getDb();
+                if (students.length === 0) return `<tr><td colspan="6" class="p-6 text-center text-gray-400">Belum ada siswa terdaftar.</td></tr>`;
+
+                return students.map(s => {
+                    const draft = db.drafts[s.id] || {};
+                    const completed = draft.completedMissions || [];
+                    const pub = published.find(p => p.studentId === s.id);
+
+                    return `
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <td class="p-3 font-bold text-brand-900">${s.name}</td>
+                            <td class="p-3 font-semibold text-gray-600">${s.class}</td>
+                            <td class="p-3 font-semibold text-gray-600">${s.absno}</td>
+                            <td class="p-3 text-center">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${completed.length === 4 ? 'bg-emerald-100 text-emerald-800' : 'bg-brand-100 text-brand-800'}">${completed.length} / 4 Selesai</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                ${pub ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black ${pub.evaluation ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-amber-950'}">${pub.evaluation ? 'Sudah Dinilai (' + pub.evaluation.finalScore + ')' : 'Dipublikasi'}</span>` : '<span class="text-gray-400">Belum</span>'}
+                            </td>
+                            <td class="p-3 text-right">
+                                ${pub ? `<button onclick="app.evalStudentPublication('${pub.id}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] rounded-lg shadow">Buka & Nilai</button>` : '<span class="text-gray-300 text-[10px]">Menunggu</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            filterTeacherTable() {
+                const cls = document.getElementById('teacherClassFilter').value;
+                const db = StorageManager.getDb();
+                let students = db.students || [];
+
+                if (cls !== 'ALL') {
+                    students = students.filter(s => s.class === cls);
+                }
+
+                document.getElementById('teacherStudentTable').innerHTML = this.generateTeacherTableRows(students, db.publishedNews || []);
+            }
+
+            evalStudentPublication(newsId) {
+                const db = StorageManager.getDb();
+                const news = db.publishedNews.find(n => n.id === newsId);
+                if (!news) return;
+
+                const evalData = news.evaluation || { ind1: 4, ind2: 4, ind3: 4, ind4: 4, feedback: '' };
+
+                const container = document.getElementById('appContainer');
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-xl border-4 border-amber-200 space-y-6">
+                        <button onclick="app.renderTeacherDashboard()" class="px-4 py-2 bg-amber-50 text-amber-800 font-extrabold text-xs rounded-xl hover:bg-amber-100"><i class="fa-solid fa-arrow-left mr-1"></i> Kembali ke Halaman Guru</button>
+
+                        <div class="border-b border-amber-200 pb-4">
+                            <span class="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-lg text-xs font-black uppercase">${news.category}</span>
+                            <h2 class="text-2xl font-black text-brand-900 mt-2">${news.title}</h2>
+                            <p class="text-xs text-gray-500 mt-1">Karya Siswa: <b>${news.authorName}</b> (${news.class})</p>
+                        </div>
+
+                        <!-- Read Content -->
+                        <div class="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-xs text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                            ${news.content}
+                        </div>
+
+                        <!-- Rubric Evaluation Form -->
+                        <div class="bg-amber-50/70 p-6 rounded-2xl border-2 border-amber-200 space-y-4">
+                            <h3 class="text-base font-black text-amber-950 flex items-center"><i class="fa-solid fa-clipboard-check text-amber-600 mr-2"></i> Rubrik Penilaian Guru Shabrina</h3>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-1">1. Fakta & Data (Skala 1-4)</label>
+                                    <input type="number" id="ind1" min="1" max="4" value="${evalData.ind1}" onchange="app.calcFinalScore()" class="w-full px-3 py-2 rounded-xl border border-amber-300 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-1">2. Kelengkapan 5W+1H (Skala 1-4)</label>
+                                    <input type="number" id="ind2" min="1" max="4" value="${evalData.ind2}" onchange="app.calcFinalScore()" class="w-full px-3 py-2 rounded-xl border border-amber-300 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-1">3. Struktur Lead-Body-Ending (1-4)</label>
+                                    <input type="number" id="ind3" min="1" max="4" value="${evalData.ind3}" onchange="app.calcFinalScore()" class="w-full px-3 py-2 rounded-xl border border-amber-300 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-amber-900 mb-1">4. EYD & Kebahasaan (Skala 1-4)</label>
+                                    <input type="number" id="ind4" min="1" max="4" value="${evalData.ind4}" onchange="app.calcFinalScore()" class="w-full px-3 py-2 rounded-xl border border-amber-300 font-bold">
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <label class="block font-bold text-amber-900 text-xs mb-1">Catatan & Umpan Balik Guru</label>
+                                <textarea id="evalFeedback" rows="3" placeholder="Tuliskan umpan balik motivatif untuk siswa..." class="w-full px-3 py-2 text-xs rounded-xl border border-amber-300 outline-none font-semibold">${evalData.feedback || ''}</textarea>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-amber-200">
+                                <div class="text-xs font-black text-amber-950">
+                                    Nilai Akhir Terkonversi: <span id="lblFinalScore" class="text-xl text-emerald-600">100</span> / 100
+                                </div>
+                                <button onclick="app.saveEvaluation('${news.id}')" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow">Simpan Penilaian</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.calcFinalScore();
+            }
+
+            calcFinalScore() {
+                const i1 = parseInt(document.getElementById('ind1').value) || 1;
+                const i2 = parseInt(document.getElementById('ind2').value) || 1;
+                const i3 = parseInt(document.getElementById('ind3').value) || 1;
+                const i4 = parseInt(document.getElementById('ind4').value) || 1;
+
+                const avg = (i1 + i2 + i3 + i4) / 16;
+                const final100 = Math.round(avg * 100);
+                document.getElementById('lblFinalScore').innerText = final100;
+            }
+
+            saveEvaluation(newsId) {
+                const i1 = parseInt(document.getElementById('ind1').value) || 1;
+                const i2 = parseInt(document.getElementById('ind2').value) || 1;
+                const i3 = parseInt(document.getElementById('ind3').value) || 1;
+                const i4 = parseInt(document.getElementById('ind4').value) || 1;
+                const feedback = document.getElementById('evalFeedback').value.trim();
+
+                const avg = (i1 + i2 + i3 + i4) / 16;
+                const finalScore = Math.round(avg * 100);
+
+                const db = StorageManager.getDb();
+                const news = db.publishedNews.find(n => n.id === newsId);
+                if (news) {
+                    news.evaluation = { ind1: i1, ind2: i2, ind3: i3, ind4: i4, feedback, finalScore };
+                    StorageManager.saveDb(db);
+                    this.showToast("Penilaian berhasil disimpan!", "success");
+                    this.renderTeacherDashboard();
+                }
+            }
+
+            handleImportJSON(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                StorageManager.importJSON(file, (success, msg) => {
+                    if (success) {
+                        this.showToast(msg, "success");
+                        this.db = StorageManager.getDb();
+                        this.renderTeacherDashboard();
+                    } else {
+                        this.showToast(msg, "error");
+                    }
+                });
+            }
+        }
+
+        // Initialize App Global Scope
+        let app;
+        window.onload = function() {
+            app = new App();
+            app.init();
+        };
+    </script>
+</body>
+</html>
